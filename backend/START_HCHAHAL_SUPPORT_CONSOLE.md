@@ -34,8 +34,8 @@ cd "/Volumes/XTREM/BITLEAF-SYTEM/50-59 SYSTEMS/52 AI Agents/GOOGLE_I_O_2026/ANTI
 
 For live production hosting, we recommend a PaaS provider like **Railway** or **Render** due to their low friction, built-in SSL handling, and automatic Github integrations.
 
-### Deployment Configuration Files
-The following files are configured at the project level to handle automated cloud builds:
+### Deployment Configuration Files & Directory Structure
+The following files and structures are configured to handle automated cloud builds:
 1.  **`Procfile`**: Used by Render, Heroku, and Railway to detect the startup routine.
     ```
     web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -45,6 +45,7 @@ The following files are configured at the project level to handle automated clou
     python-3.11.9
     ```
 3.  **`requirements.txt`**: Declares necessary application dependencies.
+4.  **`frontend/` (Mirrored)**: Because Railway sets the `backend` folder as the repository root directory, files outside of `backend/` are not included in the container build. The static frontend files have been mirrored into `backend/frontend/` to allow successful static file serving. FastAPI resolves paths dynamically: checking `backend/frontend` first, then falling back to `../frontend` locally, and finally logging a warning instead of crashing if files are missing.
 
 ### Step-by-Step Deployment Steps
 1.  **VCS Sync**: Push your repository to your private GitHub organization/account.

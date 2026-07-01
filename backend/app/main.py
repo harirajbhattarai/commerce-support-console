@@ -980,9 +980,28 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
 
 from fastapi.staticfiles import StaticFiles
 import os
+import logging
 
-# Mount the static files for the frontend storefront and dashboard console
-frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend"))
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+logger = logging.getLogger("uvicorn.error")
+
+# Determine the best path for serving frontend static files
+# 1. Deployed container path (Railway root = backend): backend/frontend
+# 2. Local workspace development path: project-level frontend folder
+app_dir = os.path.dirname(__file__)
+backend_frontend_dir = os.path.abspath(os.path.join(app_dir, "../frontend"))
+project_frontend_dir = os.path.abspath(os.path.join(app_dir, "../../frontend"))
+
+frontend_dir = None
+if os.path.exists(backend_frontend_dir) and os.path.isdir(backend_frontend_dir):
+    frontend_dir = backend_frontend_dir
+    logger.info(f"Serving static frontend from container mirrored path: {frontend_dir}")
+elif os.path.exists(project_frontend_dir) and os.path.isdir(project_frontend_dir):
+    frontend_dir = project_frontend_dir
+    logger.info(f"Serving static frontend from local workspace path: {frontend_dir}")
+else:
+    logger.warning("Frontend static directory not found. Static files serving is disabled, but API routes remain active.")
+
+if frontend_dir:
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 

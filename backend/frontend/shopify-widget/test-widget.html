@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopify Chatbot Widget Test Page</title>
+  
+  <!-- Setup styling for the test page canvas -->
+  <style>
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      overflow: hidden;
+    }
+    
+    .test-harness-info {
+      text-align: center;
+      max-width: 500px;
+      padding: 20px;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    h1 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #f0f6fc;
+    }
+    
+    p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #8b949e;
+    }
+    
+    code {
+      background-color: rgba(110, 118, 129, 0.2);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #ff7b72;
+    }
+  </style>
+
+  <!-- Configuration block mimicking Shopify Liquid Injection settings -->
+  <script>
+    window.HBS_CHAT_CONFIG = {
+      storeId: "hoverboard_store",
+      apiHost: "http://127.0.0.1:8000"
+    };
+  </script>
+
+  <!-- Load isolated widget production assets -->
+  <link rel="stylesheet" href="hoverboard-chat-widget.css">
+  <script src="hoverboard-chat-widget.js" defer></script>
+</head>
+<body>
+
+  <div class="test-harness-info">
+    <h1>Shopify Chatbot Widget sandbox</h1>
+    <p>This is a blank canvas testing the isolated customer support chatbot widget bundle.</p>
+    <p>Look at the bottom-right corner of this screen to trigger the floating chat bubble.</p>
+    <p>Ensure your FastAPI local server is running at <code>http://127.0.0.1:8000</code> to receive scoped bot answers.</p>
+  </div>
+
+  <!-- Isolated Widget Markup (from install-snippet.liquid) -->
+  <div class="hbs-chat-container">
+    
+    <!-- Floating Action Button (FAB) -->
+    <button id="hbs-chat-fab" class="hbs-chat-fab" aria-label="Open support chat">
+      <span class="hbs-chat-fab-icon">💬</span>
+      <span id="hbs-chat-unread-dot" class="hbs-chat-unread-dot hbs-chat-hidden"></span>
+    </button>
+
+    <!-- Floating Chat Window -->
+    <div id="hbs-chat-window" class="hbs-chat-window">
+      
+      <!-- Chat Header -->
+      <div class="hbs-chat-header">
+        <div class="hbs-chat-info">
+          <div class="hbs-chat-avatar">
+            <div class="hbs-chat-avatar-dot"></div>
+          </div>
+          <div>
+            <h4 class="hbs-chat-title">Store Assistant</h4>
+            <span class="hbs-chat-status">Online • Agent Bot</span>
+          </div>
+        </div>
+        <button id="hbs-chat-close" class="hbs-chat-close" aria-label="Close chat">×</button>
+      </div>
+
+      <!-- Chat Messages Log -->
+      <div id="hbs-chat-body" class="hbs-chat-body">
+        <div class="hbs-chat-message hbs-chat-message-system">
+          Secure connection established
+        </div>
+      </div>
+
+      <!-- Suggestion Chips -->
+      <div id="hbs-chat-suggestions" class="hbs-chat-suggestions"></div>
+
+      <!-- Message input footer -->
+      <div class="hbs-chat-footer">
+        <form id="hbs-chat-form" class="hbs-chat-form">
+          <input type="text" id="hbs-chat-input" placeholder="Type a message..." autocomplete="off" required>
+          <button type="submit" class="hbs-chat-send" aria-label="Send message">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

@@ -22,6 +22,7 @@ This document maps out the architectural transitions, configuration requirements
 *   **Why**: These platforms are optimized for FastAPI deployments, support automatic SSL certificates, handle continuous deployment via GitHub triggers, and manage environment configuration files out of the box.
 *   **Pricing**: Minimal resource requirement; standard CPU/RAM tier is sufficient for REST polling MVP.
 *   **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (binding to `0.0.0.0` is required for cloud load balancers to route traffic to the container).
+*   **Nesting & static file serving on Railway**: Because Railway uses the `backend` subdirectory as its repository root, the build context does not include the project-level `frontend/` directory. To resolve this, the static frontend files have been mirrored into `backend/frontend/`. FastAPI is configured to fallback gracefully and check `backend/frontend` first, then fall back to local project `../frontend`, and finally warn without crashing if neither is present.
 
 ### Why NOT AWS (EC2/ECS) yet
 *   **Complexity**: Configuring AWS VPCs, ALB routing, IAM roles, and Certificate Manager involves significant administrative overhead for an MVP prototype.

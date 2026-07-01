@@ -1,0 +1,70 @@
+{% comment %}
+  Hoverboard Chatbot Widget Snippet
+  This snippet renders a floating customer support chatbot widget.
+  Configure your store settings below.
+{% endcomment %}
+
+<!-- Configure Chatbot Scoping -->
+<script>
+  window.HBS_CHAT_CONFIG = {
+    storeId: "hoverboard_store", // Options: 'hoverboard_store', 'hcs_gadgets', 'aroma_haven'
+    apiHost: "http://127.0.0.1:8000" // Local test API url. Replace with production API gateway URL later.
+  };
+</script>
+
+<!-- Isolated Widget Markup -->
+<div class="hbs-chat-container">
+  
+  <!-- Floating Action Button (FAB) -->
+  <button id="hbs-chat-fab" class="hbs-chat-fab" aria-label="Open support chat">
+    <span class="hbs-chat-fab-icon">💬</span>
+    <span id="hbs-chat-unread-dot" class="hbs-chat-unread-dot hbs-chat-hidden"></span>
+  </button>
+
+  <!-- Floating Chat Window -->
+  <div id="hbs-chat-window" class="hbs-chat-window">
+    
+    <!-- Chat Header -->
+    <div class="hbs-chat-header">
+      <div class="hbs-chat-info">
+        <div class="hbs-chat-avatar">
+          <div class="hbs-chat-avatar-dot"></div>
+        </div>
+        <div>
+          <h4 class="hbs-chat-title">Store Assistant</h4>
+          <span class="hbs-chat-status">Online • Agent Bot</span>
+        </div>
+      </div>
+      <button id="hbs-chat-close" class="hbs-chat-close" aria-label="Close chat">×</button>
+    </div>
+
+    <!-- Chat Messages Log -->
+    <div id="hbs-chat-body" class="hbs-chat-body">
+      <div class="hbs-chat-message hbs-chat-message-system">
+        Secure connection established
+      </div>
+    </div>
+
+    <!-- Suggestion Chips -->
+    <div id="hbs-chat-suggestions" class="hbs-chat-suggestions">
+      <!-- Suggestion chips are loaded dynamically by JavaScript depending on storeId -->
+    </div>
+
+    <!-- Message input footer -->
+    <div class="hbs-chat-footer">
+      <form id="hbs-chat-form" class="hbs-chat-form">
+        <input type="text" id="hbs-chat-input" placeholder="Type a message..." autocomplete="off" required>
+        <button type="submit" class="hbs-chat-send" aria-label="Send message">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- Load Assets from Shopify Assets Directory -->
+{{ 'hoverboard-chat-widget.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'hoverboard-chat-widget.js' | asset_url }}" defer="defer"></script>
