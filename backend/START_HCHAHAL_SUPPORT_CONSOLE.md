@@ -87,6 +87,7 @@ This occurs if the virtual environment shebang path breaks. Avoid calling `uvico
 ## 4. Safety & Compliance Reminder
 
 > [!WARNING]
+> *   **Admin Dashboard Protection Active**: Accessing `/admin-dashboard.html` or administrative APIs requires token authentication when `ADMIN_DASHBOARD_TOKEN` is configured. Navigate to `/admin-dashboard.html?token=YOUR_TOKEN` to unlock your sessions.
 > *   **Amazon Selling Partner API is locked to Sandbox Mode**: All order lookups occur against mock sandboxed data only.
 > *   **No Live Sending Enabled**: The Amazon Messaging API is completely disconnected. No live customer messages can be sent or transmitted from this console.
 > *   **Strict Human-in-the-Loop**: Auto-reply remains disabled. Every message draft generated in the console must be manually reviewed, edited, and copy-pasted into Seller Central by support staff.

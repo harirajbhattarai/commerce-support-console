@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
 from app.services.knowledge_service import KnowledgeService
+from app.auth import verify_admin_token
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 
-@router.get("/product/sku/{sku}")
+@router.get("/product/sku/{sku}", dependencies=[Depends(verify_admin_token)])
 async def get_product_by_sku_endpoint(sku: str, store_id: Optional[str] = None):
     """
     Local debug route to retrieve a product by its SKU.
@@ -17,7 +18,7 @@ async def get_product_by_sku_endpoint(sku: str, store_id: Optional[str] = None):
         )
     return product
 
-@router.get("/product/asin/{asin}")
+@router.get("/product/asin/{asin}", dependencies=[Depends(verify_admin_token)])
 async def get_product_by_asin_endpoint(asin: str, store_id: Optional[str] = None):
     """
     Local debug route to retrieve a product by its ASIN.

@@ -59,8 +59,8 @@ AMAZON_MARKETPLACE_ID=A1F83G8C2ARO7P
 
 ## 4. Production Security & Safeguards
 
-> [!CAUTION]
-> **Admin Dashboard Protection**: In local dev, `/admin-dashboard.html` is accessible directly by visiting the URL. In production, this HTML path must be protected. You must implement FastAPI middleware (e.g. HTTP Basic Authentication) or a login gateway before deploying publicly.
+> [!IMPORTANT]
+> **Admin Dashboard Protection**: The admin dashboard `/admin-dashboard.html` and all private support/order API routes are secured behind a token guard. Configure the `ADMIN_DASHBOARD_TOKEN` environment variable on your hosting provider. Support agents can access the console by adding the token parameter to the URL: `admin-dashboard.html?token=YOUR_TOKEN`. The dashboard JavaScript will automatically extract the token, cache it in `sessionStorage`, and forward it via the `X-Admin-Token` request header for subsequent API calls. If the token is missing or incorrect, the backend returns a `403 Forbidden` error.
 
 ### Database Environment Protection
 *   Do not reuse your local development Supabase database for production testing.

@@ -1151,8 +1151,33 @@
 
   <!-- MAIN DASHBOARD DRIVER CODE -->
   <script>
+    const getAdminToken = () => {
+      const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('admin_token');
+      if (token) {
+        sessionStorage.setItem('admin_token', token);
+      }
+      return token;
+    };
+
+    const originalFetch = window.fetch;
+
+    const adminFetch = async (url, options = {}) => {
+      let cleanUrl = url;
+      if (typeof url === 'string') {
+        cleanUrl = url.replace("http://127.0.0.1:8000", "");
+      }
+      const token = getAdminToken();
+      if (token) {
+        if (!options.headers) {
+          options.headers = {};
+        }
+        options.headers['X-Admin-Token'] = token;
+      }
+      return originalFetch(cleanUrl, options);
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
-      const API_URL = "http://127.0.0.1:8000/api/conversations";
+      const API_URL = "/api/conversations";
 
       // DOM Handles
       const threadContainer = document.getElementById("thread-list-container");
@@ -1232,7 +1257,7 @@
       async function fetchLogs() {
         showLoading();
         try {
-          const res = await fetch(API_URL);
+          const res = await adminFetch(API_URL);
           if (!res.ok) {
             throw new Error(`Server responded with HTTP ${res.status}`);
           }
@@ -1749,7 +1774,7 @@
         if (!notesList) return;
         notesList.innerHTML = `<div style="font-size: 11px; color: var(--amzn-text-muted);">Loading notes...</div>`;
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/notes/${sessionId}`);
+          const res = await adminFetch(`http://127.0.0.1:8000/api/notes/${sessionId}`);
           if (!res.ok) {
             throw new Error(`Failed to fetch notes: ${res.status}`);
           }
@@ -1793,7 +1818,7 @@
         replyDraftInput.disabled = true;
         replyDraftInput.value = "Loading draft...";
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/reply-draft/${sessionId}`);
+          const res = await adminFetch(`http://127.0.0.1:8000/api/reply-draft/${sessionId}`);
           if (!res.ok) {
             throw new Error(`Failed to fetch draft: ${res.status}`);
           }
@@ -1810,7 +1835,7 @@
       // Session Status PUT request function
       async function updateSessionStatus(sessionId, newStatus) {
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/conversations/${sessionId}/status?status=${newStatus}`, {
+          const res = await adminFetch(`http://127.0.0.1:8000/api/conversations/${sessionId}/status?status=${newStatus}`, {
             method: "PUT"
           });
           if (!res.ok) {
@@ -1863,7 +1888,7 @@
           btnSaveNote.textContent = "Saving...";
           
           try {
-            const res = await fetch("http://127.0.0.1:8000/api/notes", {
+            const res = await adminFetch("http://127.0.0.1:8000/api/notes", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"
@@ -1903,7 +1928,7 @@
           if (draftTimeout) clearTimeout(draftTimeout);
           
           try {
-            const res = await fetch("http://127.0.0.1:8000/api/reply-draft", {
+            const res = await adminFetch("http://127.0.0.1:8000/api/reply-draft", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"
@@ -1953,7 +1978,7 @@
           btnClearDraft.textContent = "Clearing...";
           
           try {
-            const res = await fetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
+            const res = await adminFetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
               method: "DELETE"
             });
             if (!res.ok) {
@@ -1999,7 +2024,7 @@
           
           try {
             // 1. Post to agent-replies
-            const res = await fetch("http://127.0.0.1:8000/api/agent-replies", {
+            const res = await adminFetch("http://127.0.0.1:8000/api/agent-replies", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"
@@ -2014,7 +2039,7 @@
             }
             
             // 2. Clear Draft from Supabase
-            await fetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
+            await adminFetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
               method: "DELETE"
             });
             
@@ -2104,7 +2129,7 @@
         amazonOrderResultCard.style.display = "none";
         
         try {
-          const res = await fetch(`http://127.0.0.1:8000/api/amazon/orders/${orderId}`);
+          const res = await adminFetch(`http://127.0.0.1:8000/api/amazon/orders/${orderId}`);
           if (!res.ok) {
             throw new Error(`Lookup failed with status ${res.status}`);
           }
@@ -2204,7 +2229,7 @@
           btnAnalyseIssue.disabled = true;
 
           try {
-            const response = await fetch("http://127.0.0.1:8000/api/amazon/draft/analyse", {
+            const response = await adminFetch("http://127.0.0.1:8000/api/amazon/draft/analyse", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"

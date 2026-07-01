@@ -13,6 +13,7 @@ class Settings:
     PORT: int = int(os.getenv("PORT", 8000))
     HOST: str = os.getenv("HOST", "127.0.0.1")
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "")
+    ADMIN_DASHBOARD_TOKEN: str = os.getenv("ADMIN_DASHBOARD_TOKEN", "")
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     

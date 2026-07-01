@@ -94,10 +94,10 @@ This document reviews the current development progress of the HCHAHAL Support Co
   * Live deployment blueprint and checklists documented in `DEPLOYMENT_LIVE_READINESS_PLAN.md` and `START_HCHAHAL_SUPPORT_CONSOLE.md`.
   * Access control security and token-gate architecture drafted in `ADMIN_DASHBOARD_SECURITY_PLAN.md`.
   * Static file serving robustness added: mirrored static frontend directories to `backend/frontend` and refactored app mount path to prevent startup crashes in container runtimes.
-* **What is missing**: 
-  * Gated auth token verification logic implemented in static route handlers.
+  * Gated auth token verification logic implemented in `/admin-dashboard.html` HTML endpoint and all private backend data/lookup routes. Front-end console updated to extract token and forward it via headers.
+* **What is missing**:
   * Hosting setup on Railway or Render, and linking production Supabase variables.
-* **Recommended next action**: Implement the Option A Token authentication guard on private FastAPI route middleware, and deploy the backend to Railway/Render.
+* **Recommended next action**: Push codebase to private GitHub repository and proceed with deploying to Render or App Hosting.
 
 ---
 

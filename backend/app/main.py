@@ -114,9 +114,24 @@ def load_kb():
 # Load on startup
 load_kb()
 
-# --------------------------------------------------------------------------
-# API ENDPOINTS
-# --------------------------------------------------------------------------
+from fastapi import Header, Query, Depends
+from fastapi.responses import HTMLResponse
+from app.auth import verify_admin_token
+
+@app.get("/admin-dashboard.html", response_class=HTMLResponse)
+async def serve_admin_dashboard(token: Optional[str] = None):
+    expected_token = settings.ADMIN_DASHBOARD_TOKEN
+    if expected_token and token != expected_token:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid or missing admin token.")
+        
+    admin_file_path = os.path.join(frontend_dir, "admin-dashboard.html") if frontend_dir else None
+    if not admin_file_path or not os.path.exists(admin_file_path):
+        raise HTTPException(status_code=404, detail="Admin dashboard file not found.")
+        
+    with open(admin_file_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
+
 @app.get("/health")
 def health_check():
     db_status = "not_configured"
@@ -216,7 +231,7 @@ async def chat_endpoint(request: ChatRequest):
         matched_article=matched_title
     )
 
-@app.get("/api/conversations")
+@app.get("/api/conversations", dependencies=[Depends(verify_admin_token)])
 async def get_conversations(store_id: Optional[str] = None):
     if not supabase_client:
         raise HTTPException(
@@ -235,7 +250,7 @@ async def get_conversations(store_id: Optional[str] = None):
             detail=f"Failed to query chat logs: {str(e)}"
         )
 
-@app.put("/api/conversations/{session_id}/status")
+@app.put("/api/conversations/{session_id}/status", dependencies=[Depends(verify_admin_token)])
 async def update_conversation_status(session_id: str, status: str):
     if not supabase_client:
         raise HTTPException(
@@ -270,7 +285,7 @@ async def update_conversation_status(session_id: str, status: str):
             detail=f"Failed to update conversation status: {str(e)}"
         )
 
-@app.get("/api/notes/{session_id}")
+@app.get("/api/notes/{session_id}", dependencies=[Depends(verify_admin_token)])
 async def get_notes(session_id: str):
     if not supabase_client:
         raise HTTPException(
@@ -290,7 +305,7 @@ async def get_notes(session_id: str):
             detail=f"Failed to fetch staff notes: {str(e)}"
         )
 
-@app.post("/api/notes")
+@app.post("/api/notes", dependencies=[Depends(verify_admin_token)])
 async def create_note(request: NoteRequest):
     if not supabase_client:
         raise HTTPException(
@@ -311,7 +326,7 @@ async def create_note(request: NoteRequest):
             detail=f"Failed to save staff note: {str(e)}"
         )
 
-@app.get("/api/draft/{session_id}")
+@app.get("/api/draft/{session_id}", dependencies=[Depends(verify_admin_token)])
 async def get_draft(session_id: str):
     if not supabase_client:
         raise HTTPException(
@@ -332,7 +347,7 @@ async def get_draft(session_id: str):
             detail=f"Failed to fetch reply draft: {str(e)}"
         )
 
-@app.post("/api/draft")
+@app.post("/api/draft", dependencies=[Depends(verify_admin_token)])
 async def save_draft(request: DraftRequest):
     if not supabase_client:
         raise HTTPException(
@@ -354,7 +369,7 @@ async def save_draft(request: DraftRequest):
             detail=f"Failed to save reply draft: {str(e)}"
         )
 
-@app.delete("/api/draft/{session_id}")
+@app.delete("/api/draft/{session_id}", dependencies=[Depends(verify_admin_token)])
 async def delete_draft(session_id: str):
     if not supabase_client:
         raise HTTPException(
@@ -373,7 +388,7 @@ async def delete_draft(session_id: str):
             detail=f"Failed to delete reply draft: {str(e)}"
         )
 
-@app.get("/api/reply-draft/{session_id}")
+@app.get("/api/reply-draft/{session_id}", dependencies=[Depends(verify_admin_token)])
 async def get_reply_draft(session_id: str):
     if not supabase_client:
         raise HTTPException(
@@ -394,7 +409,7 @@ async def get_reply_draft(session_id: str):
             detail=f"Failed to fetch reply draft: {str(e)}"
         )
 
-@app.post("/api/reply-draft")
+@app.post("/api/reply-draft", dependencies=[Depends(verify_admin_token)])
 async def save_reply_draft(request: ReplyDraftRequest):
     if not supabase_client:
         raise HTTPException(
@@ -416,7 +431,7 @@ async def save_reply_draft(request: ReplyDraftRequest):
             detail=f"Failed to save reply draft: {str(e)}"
         )
 
-@app.delete("/api/reply-draft/{session_id}")
+@app.delete("/api/reply-draft/{session_id}", dependencies=[Depends(verify_admin_token)])
 async def delete_reply_draft(session_id: str):
     if not supabase_client:
         raise HTTPException(
@@ -435,7 +450,7 @@ async def delete_reply_draft(session_id: str):
             detail=f"Failed to delete reply draft: {str(e)}"
         )
 
-@app.post("/api/agent-replies")
+@app.post("/api/agent-replies", dependencies=[Depends(verify_admin_token)])
 async def create_agent_reply(request: AgentReplyRequest):
     if not supabase_client:
         raise HTTPException(
@@ -477,7 +492,7 @@ async def get_agent_replies(session_id: str):
             detail=f"Failed to fetch agent replies: {str(e)}"
         )
 
-@app.get("/api/amazon/health")
+@app.get("/api/amazon/health", dependencies=[Depends(verify_admin_token)])
 async def get_amazon_health():
     try:
         from app.amazon_client import get_amazon_config_status
@@ -488,7 +503,7 @@ async def get_amazon_health():
             detail=f"Failed to fetch Amazon health status: {str(e)}"
         )
 
-@app.get("/api/amazon/token-test")
+@app.get("/api/amazon/token-test", dependencies=[Depends(verify_admin_token)])
 async def test_amazon_token():
     try:
         from app.amazon_client import get_lwa_access_token, get_amazon_config_status
@@ -525,7 +540,7 @@ async def test_amazon_token():
             detail=f"Token test invocation failed: {str(e)}"
         )
 
-@app.get("/api/amazon/sandbox/marketplaces")
+@app.get("/api/amazon/sandbox/marketplaces", dependencies=[Depends(verify_admin_token)])
 async def get_sandbox_marketplaces_route():
     try:
         from app.amazon_client import get_sandbox_marketplaces, get_amazon_config_status
@@ -567,7 +582,7 @@ async def get_sandbox_marketplaces_route():
         )
 
 
-@app.get("/api/amazon/sandbox/orders")
+@app.get("/api/amazon/sandbox/orders", dependencies=[Depends(verify_admin_token)])
 async def get_sandbox_orders_route(marketplace_ids: str = None, created_after: str = None):
     try:
         from app.amazon_client import get_sandbox_orders, get_amazon_config_status
@@ -615,7 +630,7 @@ async def get_sandbox_orders_route(marketplace_ids: str = None, created_after: s
         )
 
 
-@app.get("/api/amazon/orders/{order_id}")
+@app.get("/api/amazon/orders/{order_id}", dependencies=[Depends(verify_admin_token)])
 async def get_sandbox_order_lookup_route(order_id: str):
     try:
         from app.amazon_client import get_sandbox_order, get_amazon_config_status
@@ -661,7 +676,7 @@ async def get_sandbox_order_lookup_route(order_id: str):
 
 
 
-@app.post("/api/amazon/draft/analyse", response_model=AmazonAnalysisResponse)
+@app.post("/api/amazon/draft/analyse", response_model=AmazonAnalysisResponse, dependencies=[Depends(verify_admin_token)])
 async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
     import re
     from app.amazon_client import get_sandbox_order
