@@ -653,6 +653,22 @@
       box-shadow: none;
     }
 
+    .quick-reply-btn {
+      background-color: #f7f9fa;
+      border: 1px solid var(--amzn-border);
+      border-radius: 4px;
+      color: var(--amzn-text);
+      padding: 3px 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .quick-reply-btn:hover {
+      background-color: #eaebeb;
+      border-color: #bbb;
+    }
+
     .note-card {
       background-color: #f7f9fa;
       border: 1px solid var(--amzn-border);
@@ -959,7 +975,15 @@
               </div>
             </div>
           </div>
-          <div style="font-size: 12px; font-weight: 600; color: var(--amzn-text-muted);">Draft Customer Reply</div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--amzn-text-muted); margin-bottom: 6px;">Draft Customer Reply</div>
+          <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; font-size: 11px;">
+            <span style="color: var(--amzn-text-muted); display: flex; align-items: center; font-weight: 500; margin-right: 2px;">Templates:</span>
+            <button class="quick-reply-btn" data-text="Hi there! Use code WELCOME10 at checkout to get 10% off your first hoverboard order. Let us know if you need help choosing a model!">First Order Discount</button>
+            <button class="quick-reply-btn" data-text="Hi there! Standard shipping takes 2-3 business days. If you've already ordered, please provide your order ID or email address so I can fetch the tracking link for you.">Tracking Help</button>
+            <button class="quick-reply-btn" data-text="Hi there! We offer a 30-day return policy. Hoverboards must be unused and in their original packaging. Please email returns@hoverboardstore.co.uk to request a returns label.">Return Instructions</button>
+            <button class="quick-reply-btn" data-text="⚠️ IMPORTANT SAFETY NOTICE: Please stop using and charging the board immediately. Keep the product outdoors away from flammable materials. Our senior safety representative will contact you directly within 2 hours.">Battery Safety</button>
+            <button class="quick-reply-btn" data-text="Hi there, this is a human support agent. I have taken over this chat log and am looking into your request. What can I help you with today?">Human Follow-up</button>
+          </div>
           <textarea id="reply-draft-input" placeholder="Write a response to the customer..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid var(--amzn-border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; resize: vertical;"></textarea>
           <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
             <span id="draft-status-msg" style="font-size: 11px; color: var(--accent-green); display: none; margin-right: auto; font-weight: 500;">Draft saved.</span>
@@ -2049,6 +2073,17 @@
         });
       }
 
+      // Quick Reply Templates click handler
+      document.querySelectorAll(".quick-reply-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const text = btn.getAttribute("data-text");
+          if (replyDraftInput) {
+            replyDraftInput.value = text;
+            replyDraftInput.dispatchEvent(new Event("input"));
+          }
+        });
+      });
+
       // Send Reply Button Listener
       if (btnSendReply) {
         btnSendReply.addEventListener("click", async () => {
@@ -2106,6 +2141,7 @@
             // 5. Show success toast/message
             if (draftStatusMsg) {
               draftStatusMsg.textContent = "Reply sent.";
+              draftStatusMsg.style.color = "var(--accent-green)";
               draftStatusMsg.style.display = "inline";
               
               draftTimeout = setTimeout(() => {
@@ -2118,7 +2154,22 @@
               }, 3000);
             }
           } catch (err) {
-            alert(`Error sending reply: ${err.message}`);
+            if (draftStatusMsg) {
+              draftStatusMsg.textContent = `Error: ${err.message}`;
+              draftStatusMsg.style.color = "var(--accent-red)";
+              draftStatusMsg.style.display = "inline";
+              
+              draftTimeout = setTimeout(() => {
+                draftStatusMsg.style.transition = "opacity 0.5s ease";
+                draftStatusMsg.style.opacity = "0";
+                draftTimeout = setTimeout(() => {
+                  draftStatusMsg.style.display = "none";
+                  draftStatusMsg.style.transition = "";
+                }, 500);
+              }, 4000);
+            } else {
+              alert(`Error sending reply: ${err.message}`);
+            }
           } finally {
             btnSendReply.disabled = false;
             btnSendReply.textContent = "Send Reply";

@@ -102,11 +102,52 @@ def test_integration_flow():
     assert agent_msg_in_list.get("message_type") == "agent_reply", "message_type agent_reply label missing in conversations list"
     print("Verified: Staff reply appears in dashboard with correct Support agent roles.")
     
-    print("\nALL INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
+    print("\nALL TAKEOVER INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
+
+def test_auto_escalation():
+    print("\nStarting integration test for auto-escalation intent...")
+    session_id = f"test-auto-esc-{uuid.uuid4()}"
+    store_id = "hoverboard_store"
+    
+    # Configure token for admin tests
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+    
+    # Send message with explicit human intent
+    chat_payload = {
+        "store_id": store_id,
+        "message": "can I speak to someone from support team?",
+        "conversation_id": session_id
+    }
+    
+    print(f"\n[Step 1] Customer sends human request: '{chat_payload['message']}'")
+    chat_res = client.post("/api/chat", json=chat_payload)
+    assert chat_res.status_code == 200, f"Chat failed: {chat_res.text}"
+    chat_data = chat_res.json()
+    print(f"Bot replies: '{chat_data['reply']}'")
+    assert "passed this to our support team" in chat_data["reply"].lower()
+    
+    # Verify that it is marked as escalated in database
+    print("\n[Step 2] Staff fetches conversation logs to verify auto-escalated status...")
+    conv_res = client.get("/api/conversations", headers=headers)
+    assert conv_res.status_code == 200
+    conv_data = conv_res.json()
+    logs = conv_data.get("logs", [])
+    
+    # Find our session log
+    session_log = next((log for log in logs if log["session_id"] == session_id), None)
+    assert session_log is not None, "Could not find session in logs"
+    assert session_log.get("escalated") is True, "Session escalated attribute was not set to true"
+    assert session_log.get("status") == "needs_escalation", f"Session status was not needs_escalation, got {session_log.get('status')}"
+    print(f"Verified: Session {session_id} is marked as escalated and status set to needs_escalation. ✅")
+    print("\nALL AUTO-ESCALATION INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 
 if __name__ == "__main__":
     try:
         test_integration_flow()
+        test_auto_escalation()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")

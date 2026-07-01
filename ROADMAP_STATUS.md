@@ -103,13 +103,16 @@ This document reviews the current development progress of the HCHAHAL Support Co
 ---
 
 ## 8. Install Shopify Widget Live
-* **Status**: **Partially done (Shopify storefront widget prepared to target production Railway backend.)**
+* **Status**: **Done (Shopify storefront widget prepared and ready for controlled live publishing)**
 * **What exists**: 
   * Isolated theme asset scripts `hoverboard-chat-widget.js`, CSS sheets, and `install-snippet.liquid` updated to point to production Railway.
-  * Anonymous visitor question limit of 5 questions per session implemented client-side in widget JavaScript.
+  * Anonymous visitor question limit of 5 questions per session implemented client-side.
+  * Human-intent auto-escalation keywords configured on backend queries (e.g. triggers needs_escalation and suppresses bot responses).
+  * 5 quick reply template buttons registered in admin dashboard composer.
+  * Comprehensive pre-flight launch checks, emergency rollback plan, and real-time monitoring steps documented in `SHOPIFY_GO_LIVE_CHECKLIST.md`.
 * **What is missing**: 
   * Theme app extension configurations to inject the widget into a live Shopify theme automatically via app block.
-* **Recommended next action**: Embed `install-snippet.liquid` into the Shopify theme code layout block to test live storefront routing.
+* **Recommended next action**: Run the theme app extension setup if automated injecting is requested; otherwise manually embed `install-snippet.liquid` inside theme.liquid layout page.
 
 ---
 

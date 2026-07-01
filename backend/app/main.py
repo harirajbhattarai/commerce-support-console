@@ -190,38 +190,55 @@ async def chat_endpoint(request: ChatRequest):
         reply = "Our support team has been notified and a representative will reply here shortly."
         matched_title = "Staff Takeover Active (Waiting for support representative)"
     else:
-        # 2. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow)
-        # Split the message into words for keyword checking
-        message_words = [word.strip("?,.!") for word in message_text.split()]
+        # Check if customer explicitly asks for human support team
+        human_intents = [
+            "speak to a person",
+            "human please",
+            "speak to someone",
+            "agent please",
+            "real person",
+            "customer service",
+            "support team"
+        ]
+        asks_for_human = any(intent in message_text for intent in human_intents)
         
-        for article in store_articles:
-            keywords = article.get("keywords", [])
-            # Check if any keyword matches any word in the user's query
-            for keyword in keywords:
-                if keyword in message_words or keyword in message_text:
-                    matched_content = article["content"]
-                    matched_title = article["title"]
-                    break
-            if matched_content:
-                break
-
-        # 3. Formulate Response
-        if matched_content:
-            reply = matched_content
+        if asks_for_human:
+            reply = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
+            matched_title = "Human Support Intent Requested"
+            is_escalated = True
         else:
-            # Custom default fallback greetings/messages per store
-            store_names = {
-                "hoverboard_store": "Hoverboard Store UK",
-                "hcs_gadgets": "HCS Gadgets Support",
-                "aroma_haven": "Aroma Haven Botanicals"
-            }
-            store_name = store_names.get(store_id, "our store")
+            # 2. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow)
+            # Split the message into words for keyword checking
+            message_words = [word.strip("?,.!") for word in message_text.split()]
             
-            reply = (
-                f"Thank you for contacting {store_name}. I couldn't find a direct match "
-                f"regarding that in our knowledge base. Would you like me to escalate "
-                f"your request to a human support agent?"
-            )
+            for article in store_articles:
+                keywords = article.get("keywords", [])
+                # Check if any keyword matches any word in the user's query
+                for keyword in keywords:
+                    if keyword in message_words or keyword in message_text:
+                        matched_content = article["content"]
+                        matched_title = article["title"]
+                        break
+                if matched_content:
+                    break
+
+            # 3. Formulate Response
+            if matched_content:
+                reply = matched_content
+            else:
+                # Custom default fallback greetings/messages per store
+                store_names = {
+                    "hoverboard_store": "Hoverboard Store UK",
+                    "hcs_gadgets": "HCS Gadgets Support",
+                    "aroma_haven": "Aroma Haven Botanicals"
+                }
+                store_name = store_names.get(store_id, "our store")
+                
+                reply = (
+                    f"Thank you for contacting {store_name}. I couldn't find a direct match "
+                    f"regarding that in our knowledge base. Would you like me to escalate "
+                    f"your request to a human support agent?"
+                )
 
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
