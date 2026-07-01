@@ -1,0 +1,43 @@
+{
+  "hoverboard_store": [
+    {
+      "title": "Shipping and Delivery Times",
+      "keywords": ["ship", "shipping", "deliver", "delivery", "time", "post"],
+      "content": "For our Hoverboard UK Store, standard shipping takes 2 to 3 business days within the UK. Next-day delivery is available at checkout for orders placed before 2 PM GMT."
+    },
+    {
+      "title": "Return Policy & Refunds",
+      "keywords": ["return", "refund", "policy", "send back", "money"],
+      "content": "Hoverboard Store offers a 30-day return policy. Hoverboards must be unused, in their original packaging, and with all accessories. To initiate a return, email returns@hoverboardstore.co.uk."
+    },
+    {
+      "title": "Battery and Charging Safety",
+      "keywords": ["battery", "charge", "charger", "safety", "fire"],
+      "content": "Always charge your hoverboard on a hard, flat surface in a well-ventilated room. Do not leave the hoverboard charging unattended or overnight. Only use the UL-certified charger provided with your purchase."
+    }
+  ],
+  "hcs_gadgets": [
+    {
+      "title": "Warranty Policy",
+      "keywords": ["warranty", "repair", "defect", "broken", "guarantee"],
+      "content": "At HCS Gadgets, we provide a 12-month manufacturer warranty covering technical defects. The warranty does not cover accidental water damage or physical drops."
+    },
+    {
+      "title": "Returns and Technical Diagnostics",
+      "keywords": ["return", "refund", "faulty", "diagnostic", "diagnostic check"],
+      "content": "Faulty gadgets can be sent back to our laboratory for diagnostics within 14 days of purchase. If a defect is verified, we will cover the return postage and issue a replacement or refund."
+    }
+  ],
+  "aroma_haven": [
+    {
+      "title": "Essential Oils Usage Guidelines",
+      "keywords": ["oil", "diffuse", "skin", "safety", "pets"],
+      "content": "Aroma Haven essential oils are 100% pure and highly concentrated. Always dilute them with a carrier oil before applying to the skin. Do not ingest, and keep diffusers out of reach of cats and dogs as some oils can be toxic."
+    },
+    {
+      "title": "Shipping and Packaging Fragility",
+      "keywords": ["ship", "shipping", "broken", "leak", "fragile"],
+      "content": "We package all essential oil bottles in biodegradable bubble sleeves. If an item arrives leaked or broken, take a photo and contact support@aromahaven.co.uk within 48 hours for an immediate replacement."
+    }
+  ]
+}

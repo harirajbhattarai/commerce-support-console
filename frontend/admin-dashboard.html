@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCHAHAL SUPPORT CONSOLE - Inbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       AMAZON-STYLE SUPPORT INBOX STYLESHEET
+       ========================================================================= */
+    :root {
+      --amzn-charcoal: #19222d;
+      --amzn-bg-gray: #eaeded;
+      --amzn-border: #d5dbdb;
+      --amzn-orange: #ff9900;
+      --amzn-orange-hover: #e68a00;
+      --amzn-btn-yellow: #f0c14b;
+      --amzn-btn-yellow-border: #a88734;
+      --amzn-text: #111111;
+      --amzn-text-muted: #565959;
+      --bubble-user: #f3f3f3;
+      --bubble-bot: #f7f9fa;
+      --accent-blue: #0066c0;
+      --accent-red: #b12704;
+      --accent-green: #067d62;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--amzn-bg-gray);
+      color: var(--amzn-text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* =========================================================================
+       TOP HEADER
+       ========================================================================= */
+    header {
+      background-color: var(--amzn-charcoal);
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo-text h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: white;
+    }
+
+    .logo-text span {
+      background-color: var(--amzn-orange);
+      color: var(--amzn-charcoal);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .logo-subtitle {
+      font-size: 11px;
+      color: #a2a6a6;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .search-container {
+      flex-grow: 1;
+      max-width: 500px;
+      margin: 0 40px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--amzn-border);
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: white;
+      color: var(--amzn-text);
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--amzn-orange);
+      box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
+    }
+
+    .actions-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn-refresh {
+      background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
+      border: 1px solid var(--amzn-btn-yellow-border);
+      border-radius: 3px;
+      color: #111;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 1px 0 rgba(255,255,255,.4) inset;
+    }
+
+    .btn-refresh:hover {
+      background: linear-gradient(to bottom, #f5d78e, #eeb933);
+    }
+
+    .btn-refresh:active {
+      background-color: #eeb933;
+      box-shadow: 0 1px 2px rgba(0,0,0,.15) inset;
+    }
+
+    /* =========================================================================
+       METRICS DASHBOARD BAR
+       ========================================================================= */
+    .metrics-bar {
+      background-color: white;
+      border-bottom: 1px solid var(--amzn-border);
+      padding: 10px 20px;
+      display: flex;
+      gap: 30px;
+      align-items: center;
+      height: 65px;
+      flex-shrink: 0;
+    }
+
+    .metric-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 5px 15px;
+      border-right: 1px solid var(--amzn-border);
+    }
+
+    .metric-card:last-child {
+      border-right: none;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--amzn-text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--amzn-text);
+    }
+
+    .metric-value.escalated {
+      color: var(--accent-red);
+    }
+
+    /* =========================================================================
+       MAIN DASHBOARD WORKSPACE (Three Column Layout)
+       ========================================================================= */
+    .workspace {
+      display: flex;
+      flex-grow: 1;
+      height: calc(100vh - 173px); /* Header + Metrics bar + Switcher bar */
+      overflow: hidden;
+    }
+
+
+    /* COLUMN 1: LEFT SIDEBAR (Thread List) */
+    .sidebar-left {
+      width: 320px;
+      background-color: white;
+      border-right: 1px solid var(--amzn-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 15px;
+      border-bottom: 1px solid var(--amzn-border);
+      background-color: #f7f9fa;
+      color: var(--amzn-text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .thread-list {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .thread-item {
+      padding: 15px;
+      border-bottom: 1px solid var(--amzn-border);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: background-color 0.15s ease;
+    }
+
+    .thread-item:hover {
+      background-color: #f7f9fa;
+    }
+
+    .thread-item.active {
+      background-color: #f0f7fd;
+      border-left: 4px solid var(--accent-blue);
+      padding-left: 11px; /* Compensate for border width */
+    }
+
+    .thread-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .thread-store {
+      font-size: 11px;
+      font-weight: 700;
+      background-color: #e3e6e6;
+      color: var(--amzn-text-muted);
+      padding: 2px 6px;
+      border-radius: 2px;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .thread-time {
+      font-size: 11px;
+      color: var(--amzn-text-muted);
+    }
+
+    .thread-preview {
+      font-size: 13px;
+      color: var(--amzn-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    .badge.badge-escalated {
+      background-color: #fdf0ec;
+      color: var(--accent-red);
+      border: 1px solid #f5c4b8;
+    }
+
+    .badge.badge-normal {
+      background-color: #eaf8f5;
+      color: var(--accent-green);
+      border: 1px solid #c2ebd9;
+    }
+
+    /* COLUMN 2: MIDDLE PANEL (Chat Thread) */
+    .middle-panel {
+      flex-grow: 1;
+      background-color: white;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--amzn-border);
+      background-color: #f7f9fa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .chat-header-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chat-body {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #fcfcfc;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chat-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--amzn-text-muted);
+      gap: 10px;
+    }
+
+    .chat-placeholder svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--amzn-border);
+      fill: none;
+    }
+
+    .message-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 80%;
+    }
+
+    .message-group.user {
+      align-self: flex-start;
+    }
+
+    .message-group.bot {
+      align-self: flex-end;
+    }
+
+    .message-sender {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--amzn-text-muted);
+      margin: 0 4px;
+    }
+
+    .message-group.user .message-sender {
+      text-align: left;
+    }
+
+    .message-group.bot .message-sender {
+      text-align: right;
+    }
+
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .message-group.user .message-bubble {
+      background-color: var(--bubble-user);
+      color: var(--amzn-text);
+      border: 1px solid var(--amzn-border);
+      border-top-left-radius: 0;
+    }
+
+    .message-group.bot .message-bubble {
+      background-color: #e7f4fc;
+      color: var(--amzn-text);
+      border: 1px solid #b8dcf5;
+      border-top-right-radius: 0;
+    }
+
+    .message-time {
+      font-size: 10px;
+      color: var(--amzn-text-muted);
+      align-self: flex-end;
+      margin-top: 2px;
+    }
+
+    .metadata-tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .metadata-tag {
+      font-size: 11px;
+      background-color: #f0f2f2;
+      border: 1px solid var(--amzn-border);
+      color: var(--amzn-text-muted);
+      padding: 2px 6px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* COLUMN 3: RIGHT PANEL (Details Sheet) */
+    .sidebar-right {
+      width: 320px;
+      background-color: white;
+      border-left: 1px solid var(--amzn-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+
+
+    .details-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--amzn-border);
+    }
+
+    .details-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--amzn-text-muted);
+      margin-bottom: 15px;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .meta-table tr {
+      border-bottom: 1px dashed #e3e6e6;
+    }
+
+    .meta-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .meta-table td {
+      padding: 8px 0;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .meta-table td.label {
+      color: var(--amzn-text-muted);
+      width: 90px;
+      font-weight: 500;
+    }
+
+    .meta-table td.value {
+      word-break: break-all;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .placeholder-box {
+      background-color: var(--amzn-bg-gray);
+      border: 1px dashed var(--amzn-border);
+      border-radius: 4px;
+      padding: 20px 15px;
+      text-align: center;
+      color: var(--amzn-text-muted);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .placeholder-box svg {
+      width: 32px;
+      height: 32px;
+      stroke: var(--amzn-text-muted);
+      fill: none;
+    }
+
+    /* =========================================================================
+       LOADING SPINNER & ERROR ALERTS
+       ========================================================================= */
+    .spinner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 15px;
+      color: var(--amzn-text-muted);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--amzn-bg-gray);
+      border-top: 4px solid var(--amzn-orange);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-container {
+      padding: 20px;
+      margin: 20px;
+      background-color: #fdf0ec;
+      border: 1px solid #f5c4b8;
+      border-radius: 4px;
+      color: var(--accent-red);
+      font-size: 14px;
+    }
+
+    .error-title {
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    /* =========================================================================
+       STATUS TABS AND RESOLVED BADGE
+       ========================================================================= */
+    .status-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--amzn-border);
+      background-color: #f7f9fa;
+      padding: 0 5px;
+    }
+
+    .status-tab {
+      flex: 1;
+      border: none;
+      background: none;
+      padding: 10px 5px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--amzn-text-muted);
+      cursor: pointer;
+      text-align: center;
+      border-bottom: 3px solid transparent;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .status-tab:hover:not([disabled]) {
+      color: var(--amzn-text);
+    }
+
+    .status-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .status-tab[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .badge.badge-resolved {
+      background-color: #f2f2f2;
+      color: var(--amzn-text-muted);
+      border: 1px solid var(--amzn-border);
+    }
+
+    .btn-action {
+      background: linear-gradient(to bottom, #ffffff, #f7f9fa);
+      border: 1px solid var(--amzn-border);
+      border-radius: 3px;
+      color: #111;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: 100%;
+      box-shadow: 0 1px 0 rgba(255,255,255,.4) inset;
+      transition: background 0.15s ease;
+      outline: none;
+    }
+
+    .btn-action:hover:not([disabled]) {
+      background: linear-gradient(to bottom, #f7f9fa, #e3e6e6);
+      border-color: #a2a6a6;
+    }
+
+    .btn-action:active:not([disabled]) {
+      background-color: #e3e6e6;
+      box-shadow: 0 1px 2px rgba(0,0,0,.15) inset;
+    }
+
+    .btn-action[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f7f9fa;
+      color: var(--amzn-text-muted);
+      border-color: var(--amzn-border);
+      box-shadow: none;
+    }
+
+    .note-card {
+      background-color: #f7f9fa;
+      border: 1px solid var(--amzn-border);
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .note-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--amzn-text-muted);
+      font-size: 10px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .note-text {
+      color: var(--amzn-text);
+      white-space: pre-wrap;
+    }
+
+    /* =========================================================================
+       SWITCHER BAR & BADGES
+       ========================================================================= */
+    .switcher-bar {
+      background-color: white;
+      border-bottom: 1px solid var(--amzn-border);
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .switcher-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amzn-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 8px;
+    }
+
+    .channel-switchers {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .channel-btn {
+      background-color: #f7f9fa;
+      border: 1px solid var(--amzn-border);
+      color: var(--amzn-text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    .channel-btn:hover:not([disabled]) {
+      background-color: #eaeded;
+      border-color: #a2a6a6;
+    }
+
+    .channel-btn.active {
+      background-color: #f0f7fd;
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .channel-btn[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background-color: #fcfcfc;
+      color: #888;
+      border-style: dashed;
+    }
+
+    .future-badge {
+      font-size: 8px;
+      font-weight: 700;
+      background-color: #e3e6e6;
+      color: #767676;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .store-switchers {
+      display: flex;
+      align-items: center;
+    }
+
+    .store-select {
+      padding: 4px 8px;
+      border: 1px solid var(--amzn-border);
+      border-radius: 4px;
+      font-size: 12px;
+      background-color: white;
+      color: var(--amzn-text);
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .store-select:focus {
+      border-color: var(--amzn-orange);
+    }
+
+    .badge-channel-pill {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .badge-channel-pill.shopify {
+      background-color: #e2f0d9;
+      color: #385723;
+      border: 1px solid #c8e1b6;
+    }
+
+    .badge-channel-pill.amazon {
+      background-color: #fff2cc;
+      color: #7f6000;
+      border: 1px solid #ffe599;
+    }
+
+    .badge-store-pill {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background-color: #f1f1f1;
+      color: #333;
+      border: 1px solid #ddd;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- 1. TOP BAR HEADER -->
+  <header>
+    <div class="logo-container">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--amzn-orange)">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+      </svg>
+      <div class="logo-text">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h1>HCHAHAL SUPPORT CONSOLE</h1>
+          <span>SUPPORT INBOX</span>
+        </div>
+        <div class="logo-subtitle">Multi-store customer support dashboard</div>
+      </div>
+    </div>
+    <div class="search-container">
+      <input type="text" id="dashboard-search" class="search-input" placeholder="Filter by store, session, or query content...">
+    </div>
+    <div class="actions-container">
+      <button id="btn-refresh" class="btn-refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. METRICS PANEL -->
+  <div class="metrics-bar">
+    <div class="metric-card">
+      <span class="metric-label">TOTAL CONVERSATIONS</span>
+      <span id="metric-total" class="metric-value">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">AUTO-REPLIED</span>
+      <span id="metric-auto-replied" class="metric-value">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">NEEDS ESCALATION</span>
+      <span id="metric-escalated" class="metric-value escalated">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">RESOLVED</span>
+      <span id="metric-resolved" class="metric-value">0</span>
+    </div>
+  </div>
+
+  <!-- 2B. CHANNEL & STORE SWITCHER BAR -->
+  <div class="switcher-bar">
+    <div class="channel-switchers">
+      <span class="switcher-label">Channel:</span>
+      <button class="channel-btn active" data-channel-filter="all">All</button>
+      <button class="channel-btn" data-channel-filter="shopify">Shopify</button>
+      <button class="channel-btn" data-channel-filter="amazon">Amazon</button>
+      <button class="channel-btn" disabled title="Coming Soon">
+        eBay <span class="future-badge">Future</span>
+      </button>
+      <button class="channel-btn" disabled title="Coming Soon">
+        TikTok <span class="future-badge">Future</span>
+      </button>
+      <button class="channel-btn" disabled title="Coming Soon">
+        Email <span class="future-badge">Future</span>
+      </button>
+    </div>
+    <div class="store-switchers">
+      <span class="switcher-label">Store:</span>
+      <select id="store-filter-select" class="store-select">
+        <option value="all">All Stores</option>
+        <option value="hoverboard_store">Hoverboard Store</option>
+        <option value="aroma_haven">Aroma Haven</option>
+        <option value="hcs_gadgets">HCS Gadgets</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 3. WORKSPACE (THREE-PANEL LAYOUT) -->
+  <div class="workspace">
+
+    <!-- COLUMN 1: THREAD LIST (LEFT SIDEBAR) -->
+    <div class="sidebar-left">
+      <div class="sidebar-title">
+        <span>Active Customer Chats</span>
+        <span id="thread-count" style="font-size: 12px; color: var(--amzn-text-muted); font-weight: normal;">0 threads</span>
+      </div>
+      <div class="status-tabs">
+        <button class="status-tab active" data-status="all">ALL</button>
+        <button class="status-tab" data-status="auto-replied">AUTO-REPLIED</button>
+        <button class="status-tab" data-status="needs-escalation">NEEDS ESCALATION</button>
+        <button class="status-tab" data-status="resolved">RESOLVED</button>
+      </div>
+      <div id="thread-list-container" class="thread-list">
+        <!-- JS populated thread entries -->
+        <div class="chat-placeholder">
+          <p style="font-size: 13px;">No conversations fetched.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: CONVERSATION PANEL (MIDDLE) -->
+    <div class="middle-panel">
+      <div class="chat-header">
+        <div id="active-chat-header-title" class="chat-header-title">No conversation selected</div>
+        <div id="active-chat-header-badge"></div>
+      </div>
+      <div id="chat-body-container" class="chat-body">
+        <!-- Chat bubbles populated dynamically -->
+        <div class="chat-placeholder">
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742h.008v.008h-.008v-.008zm.37 0h.008v.008h-.008v-.008zm.37 0h.008v.008h-.008v-.008zm2.182-.827a2.702 2.702 0 114.075 2.185l-.014.013v1.895h-4.06v-1.895l-.001-.005a2.702 2.702 0 010-2.193z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75h.007v.008H12V18.75z"/>
+          </svg>
+          <p>Select a conversation from the sidebar to inspect the logs.</p>
+        </div>
+      </div>
+      
+      <!-- Composer section for Human Reply Draft -->
+      <div class="chat-composer" id="composer-section" style="display: none; padding: 15px 20px; border-top: 1px solid var(--amzn-border); background-color: #f7f9fa;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Amazon Issue Assistant Card -->
+          <div id="amazon-issue-assistant-container" style="display: none; padding: 12px; border: 1px solid var(--amzn-border); border-radius: 4px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 11px; font-weight: bold; color: var(--amzn-text-muted); display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--amzn-orange);">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Amazon Issue Assistant — Human Review Only
+              </div>
+              <button id="btn-analyse-issue" class="btn-action" style="width: auto; padding: 4px 10px; font-size: 11px; margin: 0; background: #e7f3ff; color: #0066cc; border-color: #cce6ff; font-weight: 600; cursor: pointer;">Analyse Issue & Generate Draft</button>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="assistant-loading" style="display: none; font-size: 11px; color: var(--amzn-text-muted); margin-bottom: 4px; align-items: center; gap: 6px;">
+              <span class="loading-spinner-small" style="width: 10px; height: 10px; border: 2px solid #ccc; border-top-color: #0066cc; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+              Analyzing issue message in sandbox...
+            </div>
+            
+            <!-- Analysis Result Panel -->
+            <div id="assistant-results" style="display: none; flex-direction: column; gap: 6px; font-size: 11px; color: #333;">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span id="badge-category" style="padding: 2px 6px; border-radius: 3px; font-weight: 600; background-color: #e1f5fe; color: #0288d1; border: 1px solid #b3e5fc;">Category: -</span>
+                <span id="badge-risk" style="padding: 2px 6px; border-radius: 3px; font-weight: 600; background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db;">Risk: -</span>
+                <span id="badge-action" style="padding: 2px 6px; border-radius: 3px; font-weight: 600; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">Action: -</span>
+              </div>
+              <div id="assistant-order-id-info" style="font-size: 11px; font-weight: 500; display: none;">
+                Detected Amazon Order ID: <span id="assistant-detected-order-id" style="font-family: monospace; font-weight: bold; background: #eee; padding: 1px 4px; border-radius: 2px;">-</span>
+              </div>
+              <div id="assistant-escalation-warning" style="display: none; padding: 6px 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; font-weight: 600; font-size: 11px; margin-top: 2px;">
+                ⚠️ High-risk issue — human review required. Do not send without manager approval.
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--amzn-text-muted);">Draft Customer Reply</div>
+          <textarea id="reply-draft-input" placeholder="Write a response to the customer..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid var(--amzn-border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; resize: vertical;"></textarea>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+            <span id="draft-status-msg" style="font-size: 11px; color: var(--accent-green); display: none; margin-right: auto; font-weight: 500;">Draft saved.</span>
+            <span id="composer-warning-msg" style="font-size: 11px; color: var(--amzn-text-muted); font-weight: 500; margin-right: auto; display: none;"></span>
+            <button id="btn-clear-draft" class="btn-action" style="width: auto; padding: 6px 15px;">Clear Draft</button>
+            <button id="btn-save-draft" class="btn-action" style="width: auto; padding: 6px 15px;">Save Draft</button>
+            <button id="btn-copy-draft" class="btn-action" style="width: auto; padding: 6px 15px; background-color: #e7f3ff; color: #0066cc; border-color: #cce6ff; display: none; font-weight: 600;">Copy Draft</button>
+            <button id="btn-send-reply" class="btn-action" style="width: auto; padding: 6px 15px; background: linear-gradient(to bottom, #f7dfa5, #f0c14b); border-color: var(--amzn-btn-yellow-border); font-weight: 600;">Send Reply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMN 3: DETAILS SHEET (RIGHT SIDEBAR) -->
+    <div class="sidebar-right">
+      <div class="details-section">
+        <div class="details-section-title">Session Metadata</div>
+        <table class="meta-table">
+          <tr id="detail-row-store">
+            <td class="label">Store ID</td>
+            <td id="detail-store-id" class="value">—</td>
+          </tr>
+          <tr id="detail-row-amazon-account" style="display: none;">
+            <td class="label">Amazon Account</td>
+            <td id="detail-amazon-account" class="value">GiftGadgets</td>
+          </tr>
+          <tr id="detail-row-amazon-env" style="display: none;">
+            <td class="label">Environment</td>
+            <td id="detail-amazon-env" class="value">Sandbox</td>
+          </tr>
+          <tr>
+            <td class="label">Session ID</td>
+            <td id="detail-session-id" class="value" style="font-size: 11px;">—</td>
+          </tr>
+          <tr>
+            <td class="label">Status</td>
+            <td id="detail-status" class="value">—</td>
+          </tr>
+          <tr>
+            <td class="label">Escalated</td>
+            <td id="detail-escalated" class="value">—</td>
+          </tr>
+          <tr>
+            <td class="label">Created At</td>
+            <td id="detail-created-at" class="value" style="font-size: 11px;">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="details-section" id="actions-section" style="display: none;">
+        <div class="details-section-title">Action Controls</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="btn-mark-in-progress" class="btn-action">
+            Mark In Progress
+          </button>
+          <button id="btn-mark-resolved" class="btn-action">
+            Mark Resolved
+          </button>
+          <button id="btn-mark-escalated" class="btn-action" style="color: var(--accent-red);">
+            Mark Needs Escalation
+          </button>
+        </div>
+      </div>
+
+      <div class="details-section" id="notes-section" style="display: none;">
+        <div class="details-section-title">Staff Notes</div>
+        <div id="notes-list" style="margin-bottom: 12px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Notes dynamically populated -->
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <textarea id="note-input" placeholder="Type an internal support note..." style="width: 100%; height: 60px; padding: 6px; border: 1px solid var(--amzn-border); border-radius: 3px; font-size: 12px; resize: none; font-family: inherit; outline: none;"></textarea>
+          <button id="btn-save-note" class="btn-action" style="background: linear-gradient(to bottom, #f7dfa5, #f0c14b); border-color: var(--amzn-btn-yellow-border); font-weight: 600;">
+            Save Note
+          </button>
+        </div>
+      </div>
+
+      <div class="details-section">
+        <div class="details-section-title">RAG Efficacy</div>
+        <table class="meta-table">
+          <tr>
+            <td class="label">Source Matched</td>
+            <td id="detail-matched-source" class="value">—</td>
+          </tr>
+          <tr>
+            <td class="label">Confidence</td>
+            <td id="detail-confidence" class="value">—</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="details-section" id="order-details-section" style="flex-grow: 1; display: none;">
+        <div class="details-section-title">Order Details</div>
+        
+        <!-- Case 1: Shopify selected -->
+        <div id="shopify-order-placeholder" style="display: none;">
+          <div class="placeholder-box">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"/>
+            </svg>
+            <span style="font-weight: 600;">Shopify order lookup not connected yet</span>
+          </div>
+        </div>
+
+        <!-- Case 2: Amazon selected -->
+        <div id="amazon-order-sandbox-lookup" style="display: none;">
+          <div id="amazon-sandbox-lookup-container" style="display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--amzn-border); border-radius: 4px; padding: 12px; background-color: #fcfcfc;">
+            <div style="font-size: 11px; font-weight: 700; color: #c45500; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; text-align: center; border-bottom: 1px solid var(--amzn-border); padding-bottom: 6px;">
+              ⚠️ Amazon Sandbox Test — No live buyer data
+            </div>
+            
+            <!-- Helper Buttons stacked vertically / clean layout -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--amzn-text-muted);">Quick-fill Sandbox Orders:</span>
+              <button class="btn-action sandbox-helper-btn" data-order-id="902-1845936-5435065" style="font-size: 11px; padding: 6px 8px; font-family: monospace; text-align: left; background: #f7f9fa; border: 1px solid var(--amzn-border); cursor: pointer; display: flex; justify-content: space-between;">
+                <span>ID: 902-1845936-5435065</span> <span style="color: var(--amzn-orange); font-weight: 700;">[Load]</span>
+              </button>
+              <button class="btn-action sandbox-helper-btn" data-order-id="902-8745147-1934268" style="font-size: 11px; padding: 6px 8px; font-family: monospace; text-align: left; background: #f7f9fa; border: 1px solid var(--amzn-border); cursor: pointer; display: flex; justify-content: space-between;">
+                <span>ID: 902-8745147-1934268</span> <span style="color: var(--amzn-orange); font-weight: 700;">[Load]</span>
+              </button>
+            </div>
+            
+            <!-- Manual Search Input stacked vertically -->
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+              <label for="amazon-lookup-order-id" style="font-size: 11px; font-weight: 600; color: var(--amzn-text-muted);">Or enter Order ID:</label>
+              <input type="text" id="amazon-lookup-order-id" placeholder="e.g. 902-1845936-5435065" style="width: 100%; padding: 8px; border: 1px solid var(--amzn-border); border-radius: 4px; font-size: 12px; outline: none; font-family: monospace;">
+              <button id="btn-amazon-lookup" class="btn-action" style="background: linear-gradient(to bottom, #f7dfa5, #f0c14b); border-color: var(--amzn-btn-yellow-border); font-weight: 700; font-size: 12px; padding: 8px 10px; cursor: pointer; width: 100%;">
+                Lookup Order
+              </button>
+            </div>
+            
+            <!-- Error / Status Alert -->
+            <div id="amazon-lookup-status" style="font-size: 11px; color: var(--accent-red); display: none; margin-top: 2px; padding: 6px; background-color: #fdf0ec; border: 1px solid #f5c4b8; border-radius: 4px;"></div>
+
+            <!-- Loading Spinner -->
+            <div id="amazon-lookup-spinner" style="display: none; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+              <div class="spinner" style="width: 14px; height: 14px; border: 2px solid var(--amzn-border); border-top-color: var(--amzn-orange); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+              <span style="font-size: 11px; color: var(--amzn-text-muted);">Fetching sandbox order...</span>
+            </div>
+            
+            <!-- Display Safe Metadata Results Card layout -->
+            <div id="amazon-order-result-card" style="display: none; margin-top: 6px; border: 1px solid var(--amzn-border); border-radius: 4px; padding: 10px; background-color: white;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--amzn-text-muted); border-bottom: 1px solid #f0f2f2; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <span>ORDER DETAILS CARD</span>
+                <span style="font-size: 9px; color: #767676; font-weight: normal; font-style: italic;">Click ID to copy</span>
+              </div>
+              <table class="meta-table" style="width: 100%;">
+                <tr>
+                  <td class="label" style="font-size: 11px;">Order ID</td>
+                  <td id="amzn-res-order-id" class="value copyable-id" title="Click to copy Order ID" style="font-size: 11px; font-weight: 700; font-family: monospace; color: var(--accent-blue); cursor: pointer; border-bottom: 1px dotted var(--accent-blue);">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Status</td>
+                  <td id="amzn-res-status" class="value" style="font-size: 11px; font-weight: 700; color: var(--accent-green);">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Purchase Date</td>
+                  <td id="amzn-res-purchase-date" class="value" style="font-size: 11px;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Last Update</td>
+                  <td id="amzn-res-last-update" class="value" style="font-size: 11px;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Fulfillment</td>
+                  <td id="amzn-res-fulfillment" class="value" style="font-size: 11px; font-weight: 600;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Sales Channel</td>
+                  <td id="amzn-res-channel" class="value" style="font-size: 11px;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Order Type</td>
+                  <td id="amzn-res-type" class="value" style="font-size: 11px;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Shipped Qty</td>
+                  <td id="amzn-res-items-shipped" class="value" style="font-size: 11px; font-weight: 600;">—</td>
+                </tr>
+                <tr>
+                  <td class="label" style="font-size: 11px;">Unshipped Qty</td>
+                  <td id="amzn-res-items-unshipped" class="value" style="font-size: 11px; font-weight: 600;">—</td>
+                </tr>
+              </table>
+              <div id="copy-success-toast" style="font-size: 10px; color: var(--accent-green); display: none; text-align: center; margin-top: 6px; font-weight: 600;">Copied to clipboard!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Case 3: Future channel selected (eBay, TikTok Shop, Email) -->
+        <div id="future-channel-placeholder" style="display: none;">
+          <div class="placeholder-box">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <span style="font-weight: 600;">Coming soon</span>
+            <span style="font-size: 11px; color: var(--amzn-text-muted);">Channel integration is planned for a future release.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN DASHBOARD DRIVER CODE -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const API_URL = "http://127.0.0.1:8000/api/conversations";
+
+      // DOM Handles
+      const threadContainer = document.getElementById("thread-list-container");
+      const chatContainer = document.getElementById("chat-body-container");
+      const searchInput = document.getElementById("dashboard-search");
+      const refreshBtn = document.getElementById("btn-refresh");
+
+      // Metrics UI
+      const metricTotal = document.getElementById("metric-total");
+      const metricEscalated = document.getElementById("metric-escalated");
+      const threadCountText = document.getElementById("thread-count");
+
+      // Header UI
+      const chatHeaderTitle = document.getElementById("active-chat-header-title");
+      const chatHeaderBadge = document.getElementById("active-chat-header-badge");
+
+      // Detail Sheet UI
+      const detailStoreId = document.getElementById("detail-store-id");
+      const detailSessionId = document.getElementById("detail-session-id");
+      const detailEscalated = document.getElementById("detail-escalated");
+      const detailCreatedAt = document.getElementById("detail-created-at");
+      const detailMatchedSource = document.getElementById("detail-matched-source");
+      const detailConfidence = document.getElementById("detail-confidence");
+
+      // Actions UI
+      const actionsSection = document.getElementById("actions-section");
+      const btnMarkInProgress = document.getElementById("btn-mark-in-progress");
+      const btnMarkResolved = document.getElementById("btn-mark-resolved");
+      const btnMarkEscalated = document.getElementById("btn-mark-escalated");
+
+      // Notes UI
+      const notesSection = document.getElementById("notes-section");
+      const notesList = document.getElementById("notes-list");
+      const noteInput = document.getElementById("note-input");
+      const btnSaveNote = document.getElementById("btn-save-note");
+
+      // Drafts UI
+      const composerSection = document.getElementById("composer-section");
+      const replyDraftInput = document.getElementById("reply-draft-input");
+      const btnSaveDraft = document.getElementById("btn-save-draft");
+      const btnClearDraft = document.getElementById("btn-clear-draft");
+      const btnSendReply = document.getElementById("btn-send-reply");
+      const draftStatusMsg = document.getElementById("draft-status-msg");
+
+      // Global States
+      let rawLogs = [];
+      let sessions = {}; // session_id -> { session_id, store_id, last_message, created_at, escalated, status, messages: [] }
+      let activeSessionId = null;
+      let activeStatusFilter = "all";
+      let activeChannelFilter = "all";
+      let activeStoreFilter = "all";
+      let draftTimeout = null;
+
+
+      // Status Badge Helper
+      function getStatusBadgeHTML(status) {
+        if (status === "needs_escalation") {
+          return `<span class="badge badge-escalated">NEEDS ESCALATION</span>`;
+        } else if (status === "in_progress") {
+          return `<span class="badge badge-normal" style="background-color: #fcf4e8; color: #c45500; border-color: #f5d7ad;">IN PROGRESS</span>`;
+        } else if (status === "resolved") {
+          return `<span class="badge badge-resolved">RESOLVED</span>`;
+        } else {
+          return `<span class="badge badge-normal">AUTO-REPLIED</span>`;
+        }
+      }
+
+      // Format Date string
+      function formatDate(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + " " + 
+               date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      }
+
+      // Fetch logs from FastAPI
+      async function fetchLogs() {
+        showLoading();
+        try {
+          const res = await fetch(API_URL);
+          if (!res.ok) {
+            throw new Error(`Server responded with HTTP ${res.status}`);
+          }
+          rawLogs = await res.json();
+          processLogs(rawLogs);
+          renderDashboard();
+        } catch (err) {
+          showError(err.message);
+        }
+      }
+
+      // Process raw log list into sessions map
+      function processLogs(logs) {
+        sessions = {};
+        
+        // logs come ordered by created_at desc (newest first). Let's process them.
+        logs.forEach(log => {
+          const sId = log.session_id;
+          if (!sessions[sId]) {
+            sessions[sId] = {
+              session_id: sId,
+              store_id: log.store_id,
+              channel: log.channel || "shopify_widget",
+              created_at: log.created_at,
+              escalated: log.escalated || false,
+              status: log.status || (log.escalated ? "needs_escalation" : "new"),
+              last_message: log.user_message, // Newest turn since raw query order is DESC
+              messages: []
+            };
+          }
+          
+          // Latest log contains the newest status because of DESC ordering
+          if (log.status) {
+            sessions[sId].status = log.status;
+          }
+          if (log.escalated) {
+            sessions[sId].escalated = true;
+          }
+          
+          // Reconstruct individual messages for the chat history container
+          sessions[sId].messages.unshift(
+            {
+              sender: "user",
+              content: log.user_message,
+              created_at: log.created_at
+            },
+            {
+              sender: "bot",
+              content: log.assistant_message,
+              matched_source: log.matched_source,
+              confidence: log.confidence,
+              escalated: log.escalated,
+              status: log.status,
+              created_at: log.created_at
+            }
+          );
+        });
+
+        // Inject mock Amazon sessions for testing sandbox lookup and switcher functionality
+        const mockAmznSessionId = "amzn-session-sandbox-lookup";
+        if (!sessions[mockAmznSessionId]) {
+          sessions[mockAmznSessionId] = {
+            session_id: mockAmznSessionId,
+            store_id: "hoverboard_store",
+            channel: "amazon",
+            created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+            escalated: true,
+            status: "needs_escalation",
+            last_message: "Hello, where is my package? I ordered a hoverboard on Amazon. Order ID: 902-1845936-5435065",
+            messages: [
+              {
+                sender: "user",
+                content: "Hello, where is my package? I ordered a hoverboard on Amazon. Order ID: 902-1845936-5435065",
+                created_at: new Date(Date.now() - 3600000).toISOString()
+              },
+              {
+                sender: "bot",
+                content: "Hello! Thank you for contacting Hoverboard Store UK via Amazon. I'm checking the sandbox order lookup. One of our support representatives will get back to you shortly.",
+                created_at: new Date(Date.now() - 3550000).toISOString()
+              }
+            ]
+          };
+        }
+
+        const mockAmznSessionId2 = "amzn-session-sandbox-lookup-2";
+        if (!sessions[mockAmznSessionId2]) {
+          sessions[mockAmznSessionId2] = {
+            session_id: mockAmznSessionId2,
+            store_id: "aroma_haven",
+            channel: "amazon",
+            created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+            escalated: false,
+            status: "resolved",
+            last_message: "Checking delivery status for Amazon Order 902-8745147-1934268.",
+            messages: [
+              {
+                sender: "user",
+                content: "Checking delivery status for Amazon Order 902-8745147-1934268.",
+                created_at: new Date(Date.now() - 7200000).toISOString()
+              },
+              {
+                sender: "bot",
+                content: "Order 902-8745147-1934268 is resolved and fully shipped.",
+                created_at: new Date(Date.now() - 7150000).toISOString()
+              }
+            ]
+          };
+        }
+      }
+
+
+      // Show spinner when loading
+      function showLoading() {
+        threadContainer.innerHTML = `
+          <div class="spinner-container">
+            <div class="spinner"></div>
+            <span>Fetching threads...</span>
+          </div>
+        `;
+      }
+
+      // Show error notice
+      function showError(message) {
+        threadContainer.innerHTML = `
+          <div class="error-container">
+            <div class="error-title">Connection Error</div>
+            <p>Could not fetch chat logs from backend. Make sure your FastAPI server is running at <code>http://127.0.0.1:8000</code> and Supabase is configured.</p>
+            <p style="margin-top: 10px; font-size: 12px; color: var(--amzn-text-muted);">Details: ${message}</p>
+          </div>
+        `;
+        metricTotal.textContent = "—";
+        metricEscalated.textContent = "—";
+        if (document.getElementById("metric-auto-replied")) {
+          document.getElementById("metric-auto-replied").textContent = "—";
+        }
+        if (document.getElementById("metric-resolved")) {
+          document.getElementById("metric-resolved").textContent = "—";
+        }
+        threadCountText.textContent = "0 threads";
+      }
+
+      // Render conversation threads list in the sidebar & metrics bar
+      function renderDashboard(filterQuery = "") {
+        const query = filterQuery.toLowerCase().trim();
+        threadContainer.innerHTML = "";
+        
+        let filteredSessions = Object.values(sessions).filter(session => {
+          // Status filter
+          if (activeStatusFilter === "needs-escalation" && session.status !== "needs_escalation") return false;
+          if (activeStatusFilter === "auto-replied" && session.status !== "new") return false;
+          if (activeStatusFilter === "resolved" && session.status !== "resolved") return false;
+
+          // Channel filter
+          if (activeChannelFilter !== "all") {
+            if (activeChannelFilter === "shopify" && session.channel !== "shopify_widget") return false;
+            if (activeChannelFilter === "amazon" && session.channel !== "amazon") return false;
+          }
+
+          // Store filter
+          if (activeStoreFilter !== "all") {
+            if (session.channel === "shopify_widget") {
+              if (session.store_id !== activeStoreFilter) return false;
+            } else if (session.channel === "amazon") {
+              if (activeStoreFilter !== "gift_gadgets") return false;
+            }
+          }
+
+          // Search text filter
+          const matchStore = session.store_id.toLowerCase().includes(query);
+          const matchSession = session.session_id.toLowerCase().includes(query);
+          const matchMsg = session.messages.some(m => m.content.toLowerCase().includes(query));
+          return matchStore || matchSession || matchMsg;
+        });
+
+        // Sort sessions by created_at desc (newest chat activity first)
+        filteredSessions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Update metrics
+        const totalCount = Object.keys(sessions).length;
+        const escalatedCount = Object.values(sessions).filter(s => s.status === "needs_escalation").length;
+        const autoRepliedCount = Object.values(sessions).filter(s => s.status === "new").length;
+        const resolvedCount = Object.values(sessions).filter(s => s.status === "resolved").length;
+        
+        metricTotal.textContent = totalCount;
+        metricEscalated.textContent = escalatedCount;
+        if (document.getElementById("metric-auto-replied")) {
+          document.getElementById("metric-auto-replied").textContent = autoRepliedCount;
+        }
+        if (document.getElementById("metric-resolved")) {
+          document.getElementById("metric-resolved").textContent = resolvedCount;
+        }
+        threadCountText.textContent = `${filteredSessions.length} threads`;
+
+        if (filteredSessions.length === 0) {
+          threadContainer.innerHTML = `
+            <div class="chat-placeholder">
+              <p style="font-size: 13px;">No threads match your search.</p>
+            </div>
+          `;
+          return;
+        }
+
+        filteredSessions.forEach(session => {
+          const item = document.createElement("div");
+          item.className = `thread-item ${session.session_id === activeSessionId ? 'active' : ''}`;
+          item.dataset.sessionId = session.session_id;
+
+          const dateFormatted = formatDate(session.created_at);
+          const previewText = session.last_message || "(Empty message)";
+
+          const badgeHTML = getStatusBadgeHTML(session.status);
+
+          let channelBadgeHTML = "";
+          let storeBadgeHTML = "";
+          if (session.channel === "amazon") {
+            channelBadgeHTML = `<span class="badge-channel-pill amazon">AMAZON</span>`;
+            storeBadgeHTML = `
+              <span class="badge-store-pill" style="background-color: #e8f4fd; color: #0066c0; border: 1px solid #bddbf7;" title="Amazon Account">GiftGadgets</span>
+              <span class="badge-channel-pill" style="background-color: #f7f7f7; color: #565959; border: 1px solid var(--amzn-border);" title="Environment">Sandbox</span>
+            `;
+          } else {
+            channelBadgeHTML = `<span class="badge-channel-pill shopify">SHOPIFY</span>`;
+            storeBadgeHTML = `<span class="badge-store-pill" title="${session.store_id}">${session.store_id}</span>`;
+          }
+
+          item.innerHTML = `
+            <div class="thread-meta" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div style="display: flex; gap: 4px; align-items: center; max-width: 75%;">
+                ${channelBadgeHTML}
+                ${storeBadgeHTML}
+              </div>
+              <span class="thread-time">${dateFormatted}</span>
+            </div>
+            <div class="thread-preview">${previewText}</div>
+            <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+              ${badgeHTML}
+              <span style="font-size: 10px; color: var(--amzn-text-muted); font-family: monospace;">
+                ID: ${session.session_id.substring(0, 8)}...
+              </span>
+            </div>
+          `;
+
+          item.addEventListener("click", () => selectSession(session.session_id));
+          threadContainer.appendChild(item);
+        });
+
+        // Ensure active session remains styled as selected
+        if (activeSessionId && sessions[activeSessionId]) {
+          const activeEl = threadContainer.querySelector(`[data-session-id="${activeSessionId}"]`);
+          if (activeEl) activeEl.classList.add("active");
+        } else {
+          clearActiveChat();
+        }
+      }
+
+
+      // Click select event handler
+      function selectSession(sessionId) {
+        activeSessionId = sessionId;
+        
+        // Highlight in sidebar
+        const items = threadContainer.querySelectorAll(".thread-item");
+        items.forEach(el => {
+          if (el.dataset.sessionId === sessionId) {
+            el.classList.add("active");
+          } else {
+            el.classList.remove("active");
+          }
+        });
+
+        const session = sessions[sessionId];
+        if (!session) return;
+
+        // Render Chat Header
+        const storeFriendlyName = session.store_id.replace("_", " ").toUpperCase();
+        chatHeaderTitle.textContent = `${storeFriendlyName} — Session ID: ${session.session_id}`;
+        
+        chatHeaderBadge.innerHTML = getStatusBadgeHTML(session.status);
+
+        // Render Chat history
+        chatContainer.innerHTML = "";
+        session.messages.forEach(msg => {
+          const msgGroup = document.createElement("div");
+          msgGroup.className = `message-group ${msg.sender}`;
+
+          const senderName = msg.sender === "user" ? "Customer" : "Bot assistant";
+          const formattedTime = formatDate(msg.created_at);
+
+          let metadataTags = "";
+          // Show matching analytics under assistant responses
+          if (msg.sender === "bot") {
+            const source = msg.matched_source || "None (Fallback Triggered)";
+            const confPercent = Math.round((msg.confidence || 0) * 100) + "%";
+            
+            metadataTags = `
+              <div class="metadata-tag-container">
+                <span class="metadata-tag" title="Knowledge Base Source">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                  Source: ${source}
+                </span>
+                <span class="metadata-tag" title="RAG Model Similarity Match Score">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  Conf: ${confPercent}
+                </span>
+              </div>
+            `;
+          }
+
+          msgGroup.innerHTML = `
+            <div class="message-sender">${senderName}</div>
+            <div class="message-bubble">${msg.content} ${metadataTags}</div>
+            <div class="message-time">${formattedTime}</div>
+          `;
+          chatContainer.appendChild(msgGroup);
+        });
+
+        // Scroll to bottom of chat
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // Render Right details sheet
+        const detailRowStore = document.getElementById("detail-row-store");
+        const detailRowAmazonAccount = document.getElementById("detail-row-amazon-account");
+        const detailRowAmazonEnv = document.getElementById("detail-row-amazon-env");
+
+        if (session.channel === "amazon") {
+          if (detailRowStore) detailRowStore.style.display = "none";
+          if (detailRowAmazonAccount) detailRowAmazonAccount.style.display = "table-row";
+          if (detailRowAmazonEnv) detailRowAmazonEnv.style.display = "table-row";
+        } else {
+          if (detailRowStore) detailRowStore.style.display = "table-row";
+          if (detailRowAmazonAccount) detailRowAmazonAccount.style.display = "none";
+          if (detailRowAmazonEnv) detailRowAmazonEnv.style.display = "none";
+          detailStoreId.textContent = session.store_id;
+        }
+        detailSessionId.textContent = session.session_id;
+        detailEscalated.innerHTML = session.escalated 
+          ? `<span style="color: var(--accent-red); font-weight: 700;">YES</span>` 
+          : `<span style="color: var(--accent-green); font-weight: 700;">NO</span>`;
+        
+        const detailStatus = document.getElementById("detail-status");
+        if (detailStatus) {
+          detailStatus.innerHTML = getStatusBadgeHTML(session.status);
+        }
+        
+        detailCreatedAt.textContent = formatDate(session.created_at);
+
+        // Update Action Controls section
+        if (actionsSection) {
+          actionsSection.style.display = "block";
+          btnMarkInProgress.disabled = (session.status === "in_progress");
+          btnMarkResolved.disabled = (session.status === "resolved");
+          btnMarkEscalated.disabled = (session.status === "needs_escalation");
+        }
+
+        // Fetch latest metrics from RAG logs
+        const botMessages = session.messages.filter(m => m.sender === "bot");
+        if (botMessages.length > 0) {
+          // get latest turn details
+          const latestBot = botMessages[botMessages.length - 1];
+          detailMatchedSource.textContent = latestBot.matched_source || "None (Fallback)";
+          detailConfidence.textContent = Math.round((latestBot.confidence || 0) * 100) + "%";
+        } else {
+          detailMatchedSource.textContent = "—";
+          detailConfidence.textContent = "—";
+        }
+
+        // Show notes section and fetch notes
+        if (notesSection) {
+          notesSection.style.display = "block";
+          if (noteInput) noteInput.value = "";
+        }
+        fetchNotes(sessionId);
+
+        // Show composer section and fetch draft
+        if (draftTimeout) clearTimeout(draftTimeout);
+        if (composerSection) {
+          composerSection.style.display = "block";
+          if (replyDraftInput) replyDraftInput.value = "";
+          if (draftStatusMsg) {
+            draftStatusMsg.style.display = "none";
+            draftStatusMsg.style.opacity = "1";
+            draftStatusMsg.style.transition = "";
+          }
+        }
+        // Show order details section and toggle channel-specific lookup boxes
+        const orderDetailsSection = document.getElementById("order-details-section");
+        const shopifyOrderPlaceholder = document.getElementById("shopify-order-placeholder");
+        const amazonOrderSandboxLookup = document.getElementById("amazon-order-sandbox-lookup");
+        const futureChannelPlaceholder = document.getElementById("future-channel-placeholder");
+
+        if (orderDetailsSection) {
+          orderDetailsSection.style.display = "block";
+          shopifyOrderPlaceholder.style.display = "none";
+          amazonOrderSandboxLookup.style.display = "none";
+          futureChannelPlaceholder.style.display = "none";
+
+          if (session.channel === "amazon") {
+            amazonOrderSandboxLookup.style.display = "block";
+          } else if (session.channel === "shopify_widget") {
+            shopifyOrderPlaceholder.style.display = "block";
+          } else {
+            futureChannelPlaceholder.style.display = "block";
+          }
+        }
+        
+        // Toggle Amazon Issue Assistant Card
+        const amazonAssistantContainer = document.getElementById("amazon-issue-assistant-container");
+        if (amazonAssistantContainer) {
+          if (session.channel === "amazon") {
+            amazonAssistantContainer.style.display = "block";
+            // Reset results states
+            document.getElementById("assistant-results").style.display = "none";
+            document.getElementById("assistant-loading").style.display = "none";
+            document.getElementById("btn-analyse-issue").disabled = false;
+          } else {
+            amazonAssistantContainer.style.display = "none";
+          }
+        }
+
+        // Toggle composer actions by channel
+        const btnSendReply = document.getElementById("btn-send-reply");
+        const btnCopyDraft = document.getElementById("btn-copy-draft");
+        const composerWarningMsg = document.getElementById("composer-warning-msg");
+
+        if (btnSendReply && btnCopyDraft && composerWarningMsg) {
+          if (session.channel === "shopify_widget") {
+            btnSendReply.style.display = "inline-block";
+            btnCopyDraft.style.display = "none";
+            composerWarningMsg.style.display = "none";
+          } else if (session.channel === "amazon") {
+            btnSendReply.style.display = "none";
+            btnCopyDraft.style.display = "inline-block";
+            composerWarningMsg.style.display = "inline";
+            composerWarningMsg.style.color = "var(--amzn-text-muted)";
+            composerWarningMsg.textContent = "Amazon sending is disabled. Review the draft and send manually in Seller Central.";
+          } else { // future channels
+            btnSendReply.style.display = "none";
+            btnCopyDraft.style.display = "none";
+            composerWarningMsg.style.display = "inline";
+            composerWarningMsg.style.color = "var(--accent-red)";
+            composerWarningMsg.textContent = "Sending not connected yet.";
+          }
+        }
+
+        // Hide order card details when switching sessions (to keep search input fresh/clear last details)
+        const amazonOrderResultCard = document.getElementById("amazon-order-result-card");
+        const amazonLookupInput = document.getElementById("amazon-lookup-order-id");
+        const amazonLookupStatus = document.getElementById("amazon-lookup-status");
+        if (amazonOrderResultCard) amazonOrderResultCard.style.display = "none";
+        if (amazonLookupInput) amazonLookupInput.value = "";
+        if (amazonLookupStatus) amazonLookupStatus.style.display = "none";
+
+        fetchDraft(sessionId);
+      }
+
+      // Clear main screens if selection is removed or empty
+      function clearActiveChat() {
+        chatHeaderTitle.textContent = "No conversation selected";
+        chatHeaderBadge.innerHTML = "";
+        chatContainer.innerHTML = `
+          <div class="chat-placeholder">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742h.008v.008h-.008v-.008zm.37 0h.008v.008h-.008v-.008zm.37 0h.008v.008h-.008v-.008zm2.182-.827a2.702 2.702 0 114.075 2.185l-.014.013v1.895h-4.06v-1.895l-.001-.005a2.702 2.702 0 010-2.193z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75h.007v.008H12V18.75z"/>
+            </svg>
+            <p>Select a conversation from the sidebar to inspect the logs.</p>
+          </div>
+        `;
+        detailStoreId.textContent = "—";
+        detailSessionId.textContent = "—";
+        const detailStatus = document.getElementById("detail-status");
+        if (detailStatus) detailStatus.textContent = "—";
+        detailEscalated.textContent = "—";
+        detailCreatedAt.textContent = "—";
+        detailMatchedSource.textContent = "—";
+        detailConfidence.textContent = "—";
+        if (actionsSection) actionsSection.style.display = "none";
+        if (notesSection) notesSection.style.display = "none";
+        if (notesList) notesList.innerHTML = "";
+        if (noteInput) noteInput.value = "";
+        if (draftTimeout) clearTimeout(draftTimeout);
+        if (composerSection) composerSection.style.display = "none";
+        if (replyDraftInput) replyDraftInput.value = "";
+        if (draftStatusMsg) {
+          draftStatusMsg.style.display = "none";
+          draftStatusMsg.style.opacity = "1";
+          draftStatusMsg.style.transition = "";
+        }
+        
+        const detailRowStore = document.getElementById("detail-row-store");
+        const detailRowAmazonAccount = document.getElementById("detail-row-amazon-account");
+        const detailRowAmazonEnv = document.getElementById("detail-row-amazon-env");
+        if (detailRowStore) detailRowStore.style.display = "table-row";
+        if (detailRowAmazonAccount) detailRowAmazonAccount.style.display = "none";
+        if (detailRowAmazonEnv) detailRowAmazonEnv.style.display = "none";
+
+        const orderDetailsSection = document.getElementById("order-details-section");
+        if (orderDetailsSection) orderDetailsSection.style.display = "none";
+        
+        const amazonAssistantContainer = document.getElementById("amazon-issue-assistant-container");
+        if (amazonAssistantContainer) amazonAssistantContainer.style.display = "none";
+        
+        activeSessionId = null;
+      }
+
+      // Fetch staff notes for active session
+      async function fetchNotes(sessionId) {
+        if (!notesList) return;
+        notesList.innerHTML = `<div style="font-size: 11px; color: var(--amzn-text-muted);">Loading notes...</div>`;
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/notes/${sessionId}`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch notes: ${res.status}`);
+          }
+          const notes = await res.json();
+          renderNotes(notes);
+        } catch (err) {
+          notesList.innerHTML = `<div style="font-size: 11px; color: var(--accent-red);">Error loading notes: ${err.message}</div>`;
+        }
+      }
+
+      // Render notes in the container
+      function renderNotes(notes) {
+        if (!notesList) return;
+        notesList.innerHTML = "";
+        if (notes.length === 0) {
+          notesList.innerHTML = `<div style="font-size: 11px; color: var(--amzn-text-muted); font-style: italic; text-align: center; padding: 10px 0;">No staff notes yet.</div>`;
+          return;
+        }
+        notes.forEach(note => {
+          const noteCard = document.createElement("div");
+          noteCard.className = "note-card";
+          
+          const metaDiv = document.createElement("div");
+          metaDiv.className = "note-meta";
+          metaDiv.innerHTML = `<span>${note.author}</span><span>${formatDate(note.created_at)}</span>`;
+          
+          const textDiv = document.createElement("div");
+          textDiv.className = "note-text";
+          textDiv.textContent = note.note;
+          
+          noteCard.appendChild(metaDiv);
+          noteCard.appendChild(textDiv);
+          notesList.appendChild(noteCard);
+        });
+        notesList.scrollTop = notesList.scrollHeight;
+      }
+
+      // Fetch reply draft for active session
+      async function fetchDraft(sessionId) {
+        if (!replyDraftInput) return;
+        replyDraftInput.disabled = true;
+        replyDraftInput.value = "Loading draft...";
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/reply-draft/${sessionId}`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch draft: ${res.status}`);
+          }
+          const draft = await res.json();
+          replyDraftInput.value = draft.draft_text || "";
+        } catch (err) {
+          replyDraftInput.value = "";
+          console.error("Error fetching reply draft:", err);
+        } finally {
+          replyDraftInput.disabled = false;
+        }
+      }
+
+      // Session Status PUT request function
+      async function updateSessionStatus(sessionId, newStatus) {
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/conversations/${sessionId}/status?status=${newStatus}`, {
+            method: "PUT"
+          });
+          if (!res.ok) {
+            throw new Error(`Failed to update status: ${res.statusText}`);
+          }
+          
+          // Update local session properties
+          if (sessions[sessionId]) {
+            sessions[sessionId].status = newStatus;
+            sessions[sessionId].escalated = (newStatus === "needs_escalation");
+          }
+          
+          // Re-render
+          renderDashboard(searchInput.value);
+          selectSession(sessionId);
+        } catch (err) {
+          alert(`Error updating status: ${err.message}`);
+        }
+      }
+
+      // Register Events
+      refreshBtn.addEventListener("click", fetchLogs);
+      searchInput.addEventListener("input", (e) => renderDashboard(e.target.value));
+
+      // Action Buttons Listeners
+      if (btnMarkInProgress) {
+        btnMarkInProgress.addEventListener("click", () => {
+          if (activeSessionId) updateSessionStatus(activeSessionId, "in_progress");
+        });
+      }
+      if (btnMarkResolved) {
+        btnMarkResolved.addEventListener("click", () => {
+          if (activeSessionId) updateSessionStatus(activeSessionId, "resolved");
+        });
+      }
+      if (btnMarkEscalated) {
+        btnMarkEscalated.addEventListener("click", () => {
+          if (activeSessionId) updateSessionStatus(activeSessionId, "needs_escalation");
+        });
+      }
+
+      // Save Note Button Listener
+      if (btnSaveNote) {
+        btnSaveNote.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          const text = noteInput.value.trim();
+          if (!text) return;
+          
+          btnSaveNote.disabled = true;
+          btnSaveNote.textContent = "Saving...";
+          
+          try {
+            const res = await fetch("http://127.0.0.1:8000/api/notes", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                session_id: activeSessionId,
+                note: text,
+                author: "Agent"
+              })
+            });
+            if (!res.ok) {
+              throw new Error(`Failed to save note: ${res.statusText}`);
+            }
+            noteInput.value = "";
+            await fetchNotes(activeSessionId);
+          } catch (err) {
+            alert(`Error saving note: ${err.message}`);
+          } finally {
+            btnSaveNote.disabled = false;
+            btnSaveNote.textContent = "Save Note";
+          }
+        });
+      }
+
+      // Save Draft Button Listener
+      if (btnSaveDraft) {
+        btnSaveDraft.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          const draftText = replyDraftInput.value;
+          
+          btnSaveDraft.disabled = true;
+          btnSaveDraft.textContent = "Saving...";
+          if (draftStatusMsg) {
+            draftStatusMsg.style.display = "none";
+            draftStatusMsg.style.opacity = "1";
+          }
+          if (draftTimeout) clearTimeout(draftTimeout);
+          
+          try {
+            const res = await fetch("http://127.0.0.1:8000/api/reply-draft", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                session_id: activeSessionId,
+                draft_text: draftText
+              })
+            });
+            if (!res.ok) {
+              throw new Error(`Failed to save draft: ${res.statusText}`);
+            }
+            if (draftStatusMsg) {
+              draftStatusMsg.textContent = "Draft saved.";
+              draftStatusMsg.style.display = "inline";
+              
+              // Nice micro-animation fade out
+              draftTimeout = setTimeout(() => {
+                draftStatusMsg.style.transition = "opacity 0.5s ease";
+                draftStatusMsg.style.opacity = "0";
+                draftTimeout = setTimeout(() => {
+                  draftStatusMsg.style.display = "none";
+                  draftStatusMsg.style.transition = "";
+                }, 500);
+              }, 3000);
+            }
+          } catch (err) {
+            alert(`Error saving draft: ${err.message}`);
+          } finally {
+            btnSaveDraft.disabled = false;
+            btnSaveDraft.textContent = "Save Draft";
+          }
+        });
+      }
+
+      // Clear Draft Button Listener
+      if (btnClearDraft) {
+        btnClearDraft.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          if (draftTimeout) clearTimeout(draftTimeout);
+          if (draftStatusMsg) {
+            draftStatusMsg.style.display = "none";
+            draftStatusMsg.style.opacity = "1";
+          }
+          
+          btnClearDraft.disabled = true;
+          btnClearDraft.textContent = "Clearing...";
+          
+          try {
+            const res = await fetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
+              method: "DELETE"
+            });
+            if (!res.ok) {
+              throw new Error(`Failed to clear draft: ${res.statusText}`);
+            }
+            replyDraftInput.value = "";
+            if (draftStatusMsg) {
+              draftStatusMsg.textContent = "Draft cleared.";
+              draftStatusMsg.style.display = "inline";
+              
+              draftTimeout = setTimeout(() => {
+                draftStatusMsg.style.transition = "opacity 0.5s ease";
+                draftStatusMsg.style.opacity = "0";
+                draftTimeout = setTimeout(() => {
+                  draftStatusMsg.style.display = "none";
+                  draftStatusMsg.style.transition = "";
+                }, 500);
+              }, 3000);
+            }
+          } catch (err) {
+            alert(`Error clearing draft: ${err.message}`);
+          } finally {
+            btnClearDraft.disabled = false;
+            btnClearDraft.textContent = "Clear Draft";
+          }
+        });
+      }
+
+      // Send Reply Button Listener
+      if (btnSendReply) {
+        btnSendReply.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          const text = replyDraftInput.value.trim();
+          if (!text) return;
+          
+          btnSendReply.disabled = true;
+          btnSendReply.textContent = "Sending...";
+          if (draftStatusMsg) {
+            draftStatusMsg.style.display = "none";
+            draftStatusMsg.style.opacity = "1";
+          }
+          if (draftTimeout) clearTimeout(draftTimeout);
+          
+          try {
+            // 1. Post to agent-replies
+            const res = await fetch("http://127.0.0.1:8000/api/agent-replies", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                session_id: activeSessionId,
+                message: text
+              })
+            });
+            if (!res.ok) {
+              throw new Error(`Failed to send reply: ${res.statusText}`);
+            }
+            
+            // 2. Clear Draft from Supabase
+            await fetch(`http://127.0.0.1:8000/api/reply-draft/${activeSessionId}`, {
+              method: "DELETE"
+            });
+            
+            // 3. Clear draft input
+            replyDraftInput.value = "";
+            
+            // 4. Update the active thread history in the UI immediately
+            if (sessions[activeSessionId]) {
+              sessions[activeSessionId].messages.push({
+                sender: "bot",
+                content: text,
+                created_at: new Date().toISOString()
+              });
+              sessions[activeSessionId].last_message = text;
+            }
+            
+            // Re-render dashboard and chat history
+            renderDashboard(searchInput.value);
+            selectSession(activeSessionId);
+            
+            // 5. Show success toast/message
+            if (draftStatusMsg) {
+              draftStatusMsg.textContent = "Reply sent.";
+              draftStatusMsg.style.display = "inline";
+              
+              draftTimeout = setTimeout(() => {
+                draftStatusMsg.style.transition = "opacity 0.5s ease";
+                draftStatusMsg.style.opacity = "0";
+                draftTimeout = setTimeout(() => {
+                  draftStatusMsg.style.display = "none";
+                  draftStatusMsg.style.transition = "";
+                }, 500);
+              }, 3000);
+            }
+          } catch (err) {
+            alert(`Error sending reply: ${err.message}`);
+          } finally {
+            btnSendReply.disabled = false;
+            btnSendReply.textContent = "Send Reply";
+          }
+        });
+      }
+
+      // Status Tab Listeners
+      document.querySelectorAll(".status-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          if (tab.hasAttribute("disabled")) return;
+          
+          document.querySelectorAll(".status-tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          activeStatusFilter = tab.dataset.status;
+          renderDashboard(searchInput.value);
+        });
+      });
+
+      // Amazon Sandbox Lookup Logic
+      const btnAmazonLookup = document.getElementById("btn-amazon-lookup");
+      const amazonLookupInput = document.getElementById("amazon-lookup-order-id");
+      const amazonLookupSpinner = document.getElementById("amazon-lookup-spinner");
+      const amazonLookupStatus = document.getElementById("amazon-lookup-status");
+      const amazonOrderResultCard = document.getElementById("amazon-order-result-card");
+      
+      const amznResOrderId = document.getElementById("amzn-res-order-id");
+      const amznResStatus = document.getElementById("amzn-res-status");
+      const amznResPurchaseDate = document.getElementById("amzn-res-purchase-date");
+      const amznResLastUpdate = document.getElementById("amzn-res-last-update");
+      const amznResFulfillment = document.getElementById("amzn-res-fulfillment");
+      const amznResChannel = document.getElementById("amzn-res-channel");
+      const amznResType = document.getElementById("amzn-res-type");
+      const amznResItemsShipped = document.getElementById("amzn-res-items-shipped");
+      const amznResItemsUnshipped = document.getElementById("amzn-res-items-unshipped");
+
+      function showAmazonError(msg) {
+        if (amazonLookupStatus) {
+          amazonLookupStatus.textContent = msg;
+          amazonLookupStatus.style.display = "block";
+        }
+        if (amazonLookupSpinner) amazonLookupSpinner.style.display = "none";
+        if (amazonOrderResultCard) amazonOrderResultCard.style.display = "none";
+      }
+
+      async function performAmazonLookup(orderId) {
+        if (!amazonLookupStatus || !amazonLookupSpinner || !amazonOrderResultCard) return;
+        
+        amazonLookupStatus.style.display = "none";
+        amazonLookupSpinner.style.display = "flex";
+        amazonOrderResultCard.style.display = "none";
+        
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/amazon/orders/${orderId}`);
+          if (!res.ok) {
+            throw new Error(`Lookup failed with status ${res.status}`);
+          }
+          const data = await res.json();
+          
+          if (data.configured && data.sp_api_call === "success" && data.order) {
+            const order = data.order;
+            amznResOrderId.textContent = order.amazon_order_id || "—";
+            amznResStatus.textContent = order.order_status || "—";
+            amznResPurchaseDate.textContent = formatDate(order.purchase_date) || "—";
+            amznResLastUpdate.textContent = formatDate(order.last_update_date) || "—";
+            amznResFulfillment.textContent = order.fulfillment_channel || "—";
+            amznResChannel.textContent = order.sales_channel || "—";
+            amznResType.textContent = order.order_type || "—";
+            amznResItemsShipped.textContent = order.number_of_items_shipped !== undefined ? order.number_of_items_shipped : "—";
+            amznResItemsUnshipped.textContent = order.number_of_items_unshipped !== undefined ? order.number_of_items_unshipped : "—";
+            
+            amazonLookupSpinner.style.display = "none";
+            amazonOrderResultCard.style.display = "block";
+          } else {
+            const errMsg = data.error || "Order not found in SP-API sandbox";
+            showAmazonError(errMsg);
+          }
+        } catch (err) {
+          showAmazonError(`Connection error: ${err.message}`);
+        }
+      }
+
+      // Bind sandbox helper buttons
+      document.querySelectorAll(".sandbox-helper-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const orderId = btn.getAttribute("data-order-id");
+          if (amazonLookupInput) {
+            amazonLookupInput.value = orderId;
+          }
+          performAmazonLookup(orderId);
+        });
+      });
+
+      if (btnAmazonLookup) {
+        btnAmazonLookup.addEventListener("click", () => {
+          if (!amazonLookupInput) return;
+          const orderId = amazonLookupInput.value.trim();
+          if (!orderId) {
+            showAmazonError("Please enter an Order ID");
+            return;
+          }
+          performAmazonLookup(orderId);
+        });
+      }
+
+      // Amazon Issue Assistant click handler
+      const btnAnalyseIssue = document.getElementById("btn-analyse-issue");
+      const assistantLoading = document.getElementById("assistant-loading");
+      const assistantResults = document.getElementById("assistant-results");
+      const badgeCategory = document.getElementById("badge-category");
+      const badgeRisk = document.getElementById("badge-risk");
+      const badgeAction = document.getElementById("badge-action");
+      const assistantOrderIdInfo = document.getElementById("assistant-order-id-info");
+      const assistantDetectedOrderId = document.getElementById("assistant-detected-order-id");
+      const assistantEscalationWarning = document.getElementById("assistant-escalation-warning");
+
+      if (btnAnalyseIssue) {
+        btnAnalyseIssue.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          const session = sessions[activeSessionId];
+          if (!session) return;
+          
+          // Get user message
+          const userMessages = session.messages.filter(m => m.sender === "user");
+          const latestUserMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1].content : "";
+          
+          if (!latestUserMessage.trim()) {
+            alert("No customer message found to analyse.");
+            return;
+          }
+
+          // Extract order ID
+          let orderId = null;
+          const match = latestUserMessage.match(/\b\d{3}-\d{7}-\d{7}\b/);
+          if (match) {
+            orderId = match[0];
+          } else {
+            const inputVal = amazonLookupInput ? amazonLookupInput.value.trim() : "";
+            if (inputVal.match(/^\d{3}-\d{7}-\d{7}$/)) {
+              orderId = inputVal;
+            }
+          }
+
+          // Show loading
+          if (assistantLoading) {
+            assistantLoading.style.display = "flex";
+            assistantLoading.style.alignItems = "center";
+            assistantLoading.style.gap = "6px";
+          }
+          if (assistantResults) assistantResults.style.display = "none";
+          btnAnalyseIssue.disabled = true;
+
+          try {
+            const response = await fetch("http://127.0.0.1:8000/api/amazon/draft/analyse", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                session_id: activeSessionId,
+                message: latestUserMessage,
+                order_id: orderId
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error(`Server returned status code ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Set composer reply draft
+            if (replyDraftInput && data.suggested_reply) {
+              replyDraftInput.value = data.suggested_reply;
+            }
+
+            // Render Results
+            if (badgeCategory) {
+              badgeCategory.textContent = `Category: ${data.issue_category}`;
+            }
+
+            if (badgeRisk) {
+              badgeRisk.textContent = `Risk: ${data.risk_level.toUpperCase()}`;
+              // Style risk badge
+              badgeRisk.style.border = "1px solid";
+              if (data.risk_level === "low") {
+                badgeRisk.style.backgroundColor = "#e2e3e5";
+                badgeRisk.style.color = "#383d41";
+                badgeRisk.style.borderColor = "#d6d8db";
+              } else if (data.risk_level === "medium") {
+                badgeRisk.style.backgroundColor = "#fff3cd";
+                badgeRisk.style.color = "#856404";
+                badgeRisk.style.borderColor = "#ffeeba";
+              } else { // high
+                badgeRisk.style.backgroundColor = "#f8d7da";
+                badgeRisk.style.color = "#721c24";
+                badgeRisk.style.borderColor = "#f5c6cb";
+              }
+            }
+
+            if (badgeAction) {
+              badgeAction.textContent = `Action: ${data.recommended_action}`;
+              // Style action badge
+              badgeAction.style.border = "1px solid";
+              if (data.recommended_action === "draft_reply") {
+                badgeAction.style.backgroundColor = "#d4edda";
+                badgeAction.style.color = "#155724";
+                badgeAction.style.borderColor = "#c3e6cb";
+              } else if (data.recommended_action === "human_review") {
+                badgeAction.style.backgroundColor = "#cce5ff";
+                badgeAction.style.color = "#004085";
+                badgeAction.style.borderColor = "#b8daff";
+              } else { // escalate
+                badgeAction.style.backgroundColor = "#f8d7da";
+                badgeAction.style.color = "#721c24";
+                badgeAction.style.borderColor = "#f5c6cb";
+              }
+            }
+
+            // Order ID info
+            if (assistantOrderIdInfo && assistantDetectedOrderId) {
+              if (orderId) {
+                assistantDetectedOrderId.textContent = orderId;
+                assistantOrderIdInfo.style.display = "block";
+              } else {
+                assistantOrderIdInfo.style.display = "none";
+              }
+            }
+
+            // Escalation Warning
+            if (assistantEscalationWarning) {
+              if (data.risk_level === "high" || data.recommended_action === "escalate") {
+                assistantEscalationWarning.style.display = "block";
+              } else {
+                assistantEscalationWarning.style.display = "none";
+              }
+            }
+
+            if (assistantResults) assistantResults.style.display = "flex";
+
+          } catch (error) {
+            console.error("Error running Amazon analysis:", error);
+            alert(`Analysis failed: ${error.message}`);
+          } finally {
+            if (assistantLoading) assistantLoading.style.display = "none";
+            btnAnalyseIssue.disabled = false;
+          }
+        });
+      }
+
+      // Click to copy Amazon Order ID
+      if (amznResOrderId) {
+        amznResOrderId.addEventListener("click", () => {
+          const text = amznResOrderId.textContent;
+          if (text && text !== "—") {
+            navigator.clipboard.writeText(text).then(() => {
+              const toast = document.getElementById("copy-success-toast");
+              if (toast) {
+                toast.style.display = "block";
+                setTimeout(() => {
+                  toast.style.display = "none";
+                }, 2000);
+              }
+            }).catch(err => {
+              console.error("Failed to copy order ID:", err);
+            });
+          }
+        });
+      }
+
+      // Click to copy Draft reply
+      const btnCopyDraft = document.getElementById("btn-copy-draft");
+      if (btnCopyDraft) {
+        btnCopyDraft.addEventListener("click", () => {
+          if (!replyDraftInput) return;
+          const text = replyDraftInput.value.trim();
+          if (!text) {
+            alert("Draft composer is empty. Please enter or generate a draft first.");
+            return;
+          }
+          navigator.clipboard.writeText(text).then(() => {
+            // Display a status toast or temporary alert
+            const draftStatusMsg = document.getElementById("draft-status-msg");
+            if (draftStatusMsg) {
+              draftStatusMsg.textContent = "Draft copied.";
+              draftStatusMsg.style.display = "inline";
+              draftStatusMsg.style.opacity = "1";
+              setTimeout(() => {
+                draftStatusMsg.style.display = "none";
+              }, 2000);
+            }
+          }).catch(err => {
+            console.error("Failed to copy draft:", err);
+          });
+        });
+      }
+
+      // Channel filter buttons click handler
+      document.querySelectorAll("[data-channel-filter]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-channel-filter]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          activeChannelFilter = btn.getAttribute("data-channel-filter");
+          
+          // Dynamically adjust store dropdown filter
+          const storeFilterSelect = document.getElementById("store-filter-select");
+          if (storeFilterSelect) {
+            if (activeChannelFilter === "amazon") {
+              storeFilterSelect.innerHTML = `<option value="gift_gadgets">GiftGadgets (Amazon)</option>`;
+              storeFilterSelect.disabled = true;
+              activeStoreFilter = "gift_gadgets";
+            } else {
+              storeFilterSelect.innerHTML = `
+                <option value="all">All Stores</option>
+                <option value="hoverboard_store">Hoverboard Store</option>
+                <option value="aroma_haven">Aroma Haven</option>
+                <option value="hcs_gadgets">HCS Gadgets</option>
+              `;
+              storeFilterSelect.disabled = false;
+              activeStoreFilter = "all";
+            }
+          }
+          
+          renderDashboard(searchInput.value);
+        });
+      });
+
+      // Store select dropdown change handler
+      const storeFilterSelect = document.getElementById("store-filter-select");
+      if (storeFilterSelect) {
+        storeFilterSelect.addEventListener("change", (e) => {
+          activeStoreFilter = e.target.value;
+          renderDashboard(searchInput.value);
+        });
+      }
+
+      // Initial Load
+      fetchLogs();
+    });
+  </script>
+</body>
+</html>
