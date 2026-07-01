@@ -102,25 +102,26 @@ This document reviews the current development progress of the HCHAHAL Support Co
 ---
 
 ## 8. Install Shopify Widget Live
-* **Status**: **Not started**
+* **Status**: **Partially done (Shopify storefront widget prepared to target production Railway backend.)**
 * **What exists**: 
-  * Storefront mock `index.html` and script `widget.js` serving the chatbot widget locally.
+  * Isolated theme asset scripts `hoverboard-chat-widget.js`, CSS sheets, and `install-snippet.liquid` updated to point to production Railway.
+  * Anonymous visitor question limit of 5 questions per session implemented client-side in widget JavaScript.
 * **What is missing**: 
-  * Shopify App structure.
-  * Theme app extension configurations to inject the widget into a live Shopify theme.
-* **Recommended next action**: Create a Shopify Partner App template and configure the theme extension to load widget scripts dynamically.
+  * Theme app extension configurations to inject the widget into a live Shopify theme automatically via app block.
+* **Recommended next action**: Embed `install-snippet.liquid` into the Shopify theme code layout block to test live storefront routing.
 
 ---
 
 ## 9. Add Security/Auth/Rate Limits
-* **Status**: **Not started**
+* **Status**: **Partially done (Admin token-gate and visitor session limit implemented)**
 * **What exists**: 
-  * Safe service role separation (keys restricted to `.env` on backend).
+  * Safe service role separation.
+  * Simple admin dashboard query parameter and request header authentication gate (`ADMIN_DASHBOARD_TOKEN`) active on `/admin-dashboard.html` and 17 private endpoints.
+  * Visitor session rate-limiting (maximum 5 free questions per active session).
 * **What is missing**: 
-  * Admin authorization guards (login screen on `/admin-dashboard.html` using Supabase Auth).
-  * Rate-limiting middleware on chat routes.
-  * API Key rotation protocols.
-* **Recommended next action**: Integrate Supabase Auth on the console page and build a login wrapper block.
+  * Staff login screen using Supabase Auth (or Google Workspace login).
+  * IP-based rate-limiting middleware on the FastAPI chat endpoint.
+* **Recommended next action**: Integrate Supabase Auth on the console dashboard and add FastAPI IP rate-limiter middleware.
 
 ---
 

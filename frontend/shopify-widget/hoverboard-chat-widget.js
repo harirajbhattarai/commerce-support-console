@@ -81,6 +81,21 @@
       const userText = chatInput.value.trim();
       if (!userText) return;
 
+      // Question limit checks
+      const limitKey = `hbs_chat_question_count_${CONFIG.storeId}`;
+      let currentCount = parseInt(sessionStorage.getItem(limitKey) || "0", 10);
+      
+      const MAX_FREE_QUESTIONS = 5;
+      if (currentCount >= MAX_FREE_QUESTIONS) {
+        addMessage("bot", `You have reached the maximum number of free support questions (${MAX_FREE_QUESTIONS}) for this session. Please contact support via email if you need further help.`);
+        chatInput.value = "";
+        return;
+      }
+      
+      // Increment count
+      currentCount++;
+      sessionStorage.setItem(limitKey, currentCount.toString());
+
       chatInput.value = "";
 
       // Push user message
