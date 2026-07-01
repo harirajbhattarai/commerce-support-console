@@ -371,6 +371,10 @@
       align-self: flex-end;
     }
 
+    .message-group.agent {
+      align-self: flex-end;
+    }
+
     .message-sender {
       font-size: 11px;
       font-weight: 600;
@@ -383,6 +387,10 @@
     }
 
     .message-group.bot .message-sender {
+      text-align: right;
+    }
+
+    .message-group.agent .message-sender {
       text-align: right;
     }
 
@@ -405,6 +413,13 @@
       background-color: #e7f4fc;
       color: var(--amzn-text);
       border: 1px solid #b8dcf5;
+      border-top-right-radius: 0;
+    }
+
+    .message-group.agent .message-bubble {
+      background-color: #f0fdf4;
+      color: var(--amzn-text);
+      border: 1px solid #bbf7d0;
       border-top-right-radius: 0;
     }
 
@@ -1261,8 +1276,9 @@
           if (!res.ok) {
             throw new Error(`Server responded with HTTP ${res.status}`);
           }
-          rawLogs = await res.json();
-          processLogs(rawLogs);
+          const rawData = await res.json();
+          rawLogs = rawData.logs || [];
+          processLogs(rawData.logs || [], rawData.agent_replies || []);
           renderDashboard();
         } catch (err) {
           showError(err.message);
@@ -1270,7 +1286,7 @@
       }
 
       // Process raw log list into sessions map
-      function processLogs(logs) {
+      function processLogs(logs, agentReplies = []) {
         sessions = {};
         
         // logs come ordered by created_at desc (newest first). Let's process them.
@@ -1298,7 +1314,7 @@
           }
           
           // Reconstruct individual messages for the chat history container
-          sessions[sId].messages.unshift(
+          sessions[sId].messages.push(
             {
               sender: "user",
               content: log.user_message,
@@ -1314,6 +1330,27 @@
               created_at: log.created_at
             }
           );
+        });
+
+        // Process agent replies
+        agentReplies.forEach(reply => {
+          const sId = reply.session_id;
+          if (sessions[sId]) {
+            sessions[sId].messages.push({
+              sender: "agent",
+              content: reply.message,
+              created_at: reply.created_at
+            });
+            // Update last message if this reply is newer than sessions[sId].created_at
+            if (new Date(reply.created_at) > new Date(sessions[sId].created_at)) {
+              sessions[sId].last_message = reply.message;
+            }
+          }
+        });
+
+        // Sort messages chronologically by timestamp
+        Object.values(sessions).forEach(session => {
+          session.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         });
 
         // Inject mock Amazon sessions for testing sandbox lookup and switcher functionality
@@ -1543,7 +1580,12 @@
           const msgGroup = document.createElement("div");
           msgGroup.className = `message-group ${msg.sender}`;
 
-          const senderName = msg.sender === "user" ? "Customer" : "Bot assistant";
+          let senderName = "Bot assistant";
+          if (msg.sender === "user") {
+            senderName = "Customer";
+          } else if (msg.sender === "agent") {
+            senderName = "Support agent";
+          }
           const formattedTime = formatDate(msg.created_at);
 
           let metadataTags = "";

@@ -36,6 +36,7 @@ This document reviews the current development progress of the HCHAHAL Support Co
 * **What exists**: 
   * `admin-dashboard.html` with real-time UI updates upon sending replies, clearing drafts, or saving internal staff notes.
   * Fading success micro-animations for UX completeness.
+  * Fully connected human takeover and real-time reply polling flow between the admin dashboard and storefront widget via the `agent_replies` table.
 * **What is missing**: Real-time push updates for the thread lists on the admin console (the panel relies on manual "Refresh" button clicks).
 * **Recommended next action**: Add a background REST polling hook or Server-Sent Events (SSE) to update active threads dynamically.
 

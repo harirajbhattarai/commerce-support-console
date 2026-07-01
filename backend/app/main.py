@@ -167,46 +167,74 @@ async def chat_endpoint(request: ChatRequest):
     matched_content = None
     matched_title = None
 
-    # 2. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow)
-    # Split the message into words for keyword checking
-    message_words = [word.strip("?,.!") for word in message_text.split()]
-    
-    for article in store_articles:
-        keywords = article.get("keywords", [])
-        # Check if any keyword matches any word in the user's query
-        for keyword in keywords:
-            if keyword in message_words or keyword in message_text:
-                matched_content = article["content"]
-                matched_title = article["title"]
-                break
-        if matched_content:
-            break
+    # 1.5. Check if session is already escalated or in progress
+    is_escalated = False
+    db_status = "new"
+    if supabase_client:
+        try:
+            log_res = supabase_client.table("chat_logs")\
+                .select("status, escalated")\
+                .eq("session_id", conversation_id)\
+                .order("created_at", desc=True)\
+                .limit(1)\
+                .execute()
+            if log_res.data:
+                db_status = log_res.data[0].get("status")
+                db_escalated = log_res.data[0].get("escalated", False)
+                if db_status in ["needs_escalation", "in_progress"] or db_escalated:
+                    is_escalated = True
+        except Exception as err:
+            print(f"Error checking session escalation status: {err}")
 
-    # 3. Formulate Response
-    if matched_content:
-        reply = matched_content
+    if is_escalated:
+        reply = "Our support team has been notified and a representative will reply here shortly."
+        matched_title = "Staff Takeover Active (Waiting for support representative)"
     else:
-        # Custom default fallback greetings/messages per store
-        store_names = {
-            "hoverboard_store": "Hoverboard Store UK",
-            "hcs_gadgets": "HCS Gadgets Support",
-            "aroma_haven": "Aroma Haven Botanicals"
-        }
-        store_name = store_names.get(store_id, "our store")
+        # 2. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow)
+        # Split the message into words for keyword checking
+        message_words = [word.strip("?,.!") for word in message_text.split()]
         
-        reply = (
-            f"Thank you for contacting {store_name}. I couldn't find a direct match "
-            f"regarding that in our knowledge base. Would you like me to escalate "
-            f"your request to a human support agent?"
-        )
+        for article in store_articles:
+            keywords = article.get("keywords", [])
+            # Check if any keyword matches any word in the user's query
+            for keyword in keywords:
+                if keyword in message_words or keyword in message_text:
+                    matched_content = article["content"]
+                    matched_title = article["title"]
+                    break
+            if matched_content:
+                break
+
+        # 3. Formulate Response
+        if matched_content:
+            reply = matched_content
+        else:
+            # Custom default fallback greetings/messages per store
+            store_names = {
+                "hoverboard_store": "Hoverboard Store UK",
+                "hcs_gadgets": "HCS Gadgets Support",
+                "aroma_haven": "Aroma Haven Botanicals"
+            }
+            store_name = store_names.get(store_id, "our store")
+            
+            reply = (
+                f"Thank you for contacting {store_name}. I couldn't find a direct match "
+                f"regarding that in our knowledge base. Would you like me to escalate "
+                f"your request to a human support agent?"
+            )
 
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
         try:
-            # Escalated if fallback triggered (no article matched)
-            escalated = matched_title is None
-            confidence = 1.0 if matched_title else 0.0
-            status = "needs_escalation" if escalated else "new"
+            if is_escalated:
+                escalated = True
+                confidence = 0.0
+                status = db_status if db_status == "in_progress" else "needs_escalation"
+            else:
+                # Escalated if fallback triggered (no article matched)
+                escalated = matched_title is None
+                confidence = 1.0 if matched_title else 0.0
+                status = "needs_escalation" if escalated else "new"
             
             log_entry = {
                 "store_id": store_id,
@@ -242,12 +270,19 @@ async def get_conversations(store_id: Optional[str] = None):
         query = supabase_client.table("chat_logs").select("*").order("created_at", desc=True)
         if store_id:
             query = query.eq("store_id", store_id)
-        response = query.execute()
-        return response.data
+        logs_res = query.execute()
+
+        # Fetch all agent replies
+        replies_res = supabase_client.table("agent_replies").select("*").order("created_at", desc=True).execute()
+
+        return {
+            "logs": logs_res.data or [],
+            "agent_replies": replies_res.data or []
+        }
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to query chat logs: {str(e)}"
+            detail=f"Failed to query conversation data: {str(e)}"
         )
 
 @app.put("/api/conversations/{session_id}/status", dependencies=[Depends(verify_admin_token)])

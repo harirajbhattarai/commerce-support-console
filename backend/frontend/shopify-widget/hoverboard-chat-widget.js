@@ -139,6 +139,48 @@
     // Populate suggestions
     populateSuggestions(storeTheme.suggestions, chatSuggestions, chatInput, chatForm);
 
+    // Track already rendered human agent replies to avoid duplication
+    const seenReplyIds = new Set();
+    messages.forEach(msg => {
+      if (msg.id) {
+        seenReplyIds.add(msg.id);
+      }
+    });
+
+    // Human Takeover Reply Polling Loop
+    let pollInterval = null;
+    function startPolling() {
+      if (pollInterval) return;
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${CONFIG.apiHost}/api/agent-replies/${conversationId}`);
+          if (!res.ok) return;
+          const replies = await res.json();
+          
+          let newReplies = false;
+          replies.forEach(reply => {
+            if (!seenReplyIds.has(reply.id)) {
+              seenReplyIds.add(reply.id);
+              addMessage("agent", reply.message, reply.id);
+              newReplies = true;
+            }
+          });
+          
+          if (newReplies) {
+            scrollToBottom();
+            if (!chatWin.classList.contains("hbs-chat-open")) {
+              unreadDot.classList.remove("hbs-chat-hidden");
+            }
+          }
+        } catch (e) {
+          console.error("Error polling agent replies:", e);
+        }
+      }, 5000);
+    }
+    
+    // Start polling loop immediately
+    startPolling();
+
     // Initial greeting if session is fresh
     if (messages.length === 0) {
       addMessage("bot", `Hello! Thanks for visiting us. How can I help you today?`);
@@ -150,13 +192,26 @@
       messages.forEach(msg => appendBubble(msg.sender, msg.content));
     }
 
-    function addMessage(sender, content) {
-      messages.push({ sender, content });
+    function addMessage(sender, content, id = null) {
+      messages.push({ sender, content, id });
       sessionStorage.setItem(sessionKey, JSON.stringify({ conversationId, messages }));
       appendBubble(sender, content);
     }
 
     function appendBubble(sender, content) {
+      // 1. Render small sender label
+      const label = document.createElement("div");
+      label.className = `hbs-chat-message-label hbs-chat-message-label-${sender}`;
+      if (sender === "bot") {
+        label.textContent = "Bot assistant";
+      } else if (sender === "agent") {
+        label.textContent = "Support agent";
+      } else {
+        label.textContent = "Customer";
+      }
+      chatBody.appendChild(label);
+
+      // 2. Render bubble
       const bubble = document.createElement("div");
       bubble.className = `hbs-chat-message hbs-chat-message-${sender}`;
       bubble.textContent = content;
