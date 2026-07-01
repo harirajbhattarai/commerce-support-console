@@ -2052,6 +2052,7 @@
       // Send Reply Button Listener
       if (btnSendReply) {
         btnSendReply.addEventListener("click", async () => {
+          if (btnSendReply.disabled) return;
           if (!activeSessionId) return;
           const text = replyDraftInput.value.trim();
           if (!text) return;
@@ -2091,7 +2092,7 @@
             // 4. Update the active thread history in the UI immediately
             if (sessions[activeSessionId]) {
               sessions[activeSessionId].messages.push({
-                sender: "bot",
+                sender: "agent",
                 content: text,
                 created_at: new Date().toISOString()
               });

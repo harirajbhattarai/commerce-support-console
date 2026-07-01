@@ -86,7 +86,21 @@ def test_integration_flow():
     assert len(poll_data) > 0, "No agent replies returned"
     agent_message = next((msg for msg in poll_data if msg["message"] == reply_payload["message"]), None)
     assert agent_message is not None, "Human agent message not found in poll results"
-    print(f"Verified: Customer widget successfully received agent reply: '{agent_message['message']}'")
+    assert agent_message.get("role") == "support_agent", "Role support_agent label missing"
+    assert agent_message.get("message_type") == "agent_reply", "message_type agent_reply label missing"
+    print(f"Verified: Customer widget successfully received agent reply with correct labels: '{agent_message['message']}'")
+
+    # 8. Fetch conversations and check role mapping in dashboard responses
+    print("\n[Step 7] Console fetches conversations and verifies role mapping in agent replies...")
+    list_res = client.get("/api/conversations", headers=headers)
+    assert list_res.status_code == 200
+    list_data = list_res.json()
+    replies_list = list_data.get("agent_replies", [])
+    agent_msg_in_list = next((r for r in replies_list if r["session_id"] == session_id and r["message"] == reply_payload["message"]), None)
+    assert agent_msg_in_list is not None, "Agent reply not found in unified list response"
+    assert agent_msg_in_list.get("role") == "support_agent", "Role support_agent label missing in conversations list"
+    assert agent_msg_in_list.get("message_type") == "agent_reply", "message_type agent_reply label missing in conversations list"
+    print("Verified: Staff reply appears in dashboard with correct Support agent roles.")
     
     print("\nALL INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 

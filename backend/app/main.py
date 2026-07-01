@@ -274,10 +274,14 @@ async def get_conversations(store_id: Optional[str] = None):
 
         # Fetch all agent replies
         replies_res = supabase_client.table("agent_replies").select("*").order("created_at", desc=True).execute()
+        replies = replies_res.data or []
+        for r in replies:
+            r["role"] = "support_agent"
+            r["message_type"] = "agent_reply"
 
         return {
             "logs": logs_res.data or [],
-            "agent_replies": replies_res.data or []
+            "agent_replies": replies
         }
     except Exception as e:
         raise HTTPException(
@@ -520,7 +524,11 @@ async def get_agent_replies(session_id: str):
             .eq("status", "sent")\
             .order("created_at", desc=False)\
             .execute()
-        return response.data
+        replies = response.data or []
+        for reply in replies:
+            reply["role"] = "support_agent"
+            reply["message_type"] = "agent_reply"
+        return replies
     except Exception as e:
         raise HTTPException(
             status_code=500,
