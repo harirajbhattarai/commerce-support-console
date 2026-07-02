@@ -4,13 +4,45 @@
    ========================================================================= */
 
 (function () {
-  // 1. Load Configurations from Global Config or Default Fallback
-  const CONFIG = window.HBS_CHAT_CONFIG || {
-    storeId: "hoverboard_store",
-    apiHost: "http://127.0.0.1:8000"
+  // Check if we are running in local development mode
+  const isLocalDev = window.location.hostname === "localhost" || 
+                     window.location.hostname === "127.0.0.1" || 
+                     window.location.hostname.includes("local");
+
+  // Load Configurations from Global Config or Default Fallback
+  const globalConfig = window.HBS_CHAT_CONFIG || {};
+  let resolvedApiHost = globalConfig.apiHost;
+  
+  if (!resolvedApiHost) {
+    resolvedApiHost = isLocalDev 
+      ? "http://127.0.0.1:8000" 
+      : "https://commerce-support-console-production.up.railway.app";
+  } else if (resolvedApiHost.includes("127.0.0.1") || resolvedApiHost.includes("localhost")) {
+    // If it was explicitly set to local API but the user is not on local dev, force fallback to production Railway URL
+    if (!isLocalDev) {
+      resolvedApiHost = "https://commerce-support-console-production.up.railway.app";
+    }
+  }
+
+  const CONFIG = {
+    storeId: globalConfig.storeId || "hoverboard_store",
+    apiHost: resolvedApiHost
   };
 
   const API_ENDPOINT = `${CONFIG.apiHost}/api/chat`;
+
+  // Dev-only logs helper (silent for customers in production)
+  function devLog(message, ...args) {
+    if (isLocalDev) {
+      console.log(`[HBS_CHAT_DEV] ${message}`, ...args);
+    }
+  }
+  
+  function devError(message, ...args) {
+    if (isLocalDev) {
+      console.error(`[HBS_CHAT_DEV] ${message}`, ...args);
+    }
+  }
 
   // Brand Accent Configuration per Store (Sets CSS Variables Dynamically)
   const BRAND_THEMES = {
@@ -107,6 +139,7 @@
       scrollToBottom();
 
       try {
+        devLog("Sending message to API endpoint:", API_ENDPOINT);
         const res = await fetch(API_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -125,12 +158,16 @@
         addMessage("bot", data.reply);
 
       } catch (err) {
-        console.warn("FastAPI backend is offline. Running offline simulation:", err);
+        devError("Chatbot backend connection error:", err);
         typingIndicator.remove();
         
-        // Simulating matching in offline mode
-        const fallbackReply = getOfflineReply(CONFIG.storeId, userText);
-        addMessage("bot", fallbackReply);
+        const supportEmails = {
+          hoverboard_store: "support@hoverboardstore.co.uk",
+          hcs_gadgets: "support@hcsgadgets.co.uk",
+          aroma_haven: "support@aromahaven.co.uk"
+        };
+        const supportEmail = supportEmails[CONFIG.storeId] || "support@hoverboardstore.co.uk";
+        addMessage("bot", `Sorry, our support assistant is temporarily unavailable. Please email ${supportEmail}.`);
       }
 
       scrollToBottom();
@@ -173,7 +210,7 @@
             }
           }
         } catch (e) {
-          console.error("Error polling agent replies:", e);
+          devError("Error polling agent replies:", e);
         }
       }, 5000);
     }
@@ -256,39 +293,5 @@
       });
       parentEl.appendChild(chip);
     });
-  }
-
-  // Client-side fail-safe fallback
-  function getOfflineReply(storeId, text) {
-    const query = text.toLowerCase();
-    const serverNote = "\n\n(⚠️ Live Chatbot Server is offline. Showing simulated offline reply.)";
-    
-    if (storeId === "hoverboard_store") {
-      if (query.includes("ship") || query.includes("deliver")) {
-        return "We ship hoverboards in the UK in 2-3 business days." + serverNote;
-      }
-      if (query.includes("return") || query.includes("refund")) {
-        return "You can return your hoverboard in original packaging within 30 days." + serverNote;
-      }
-      if (query.includes("battery") || query.includes("charge")) {
-        return "Always charge on flat surfaces, do not leave unattended, and use the official charger." + serverNote;
-      }
-    } else if (storeId === "hcs_gadgets") {
-      if (query.includes("warranty")) {
-        return "We provide a 12-month manufacturer warranty covering defects." + serverNote;
-      }
-      if (query.includes("return") || query.includes("fault")) {
-        return "Faulty gadgets can be returned for laboratory diagnostics within 14 days." + serverNote;
-      }
-    } else if (storeId === "aroma_haven") {
-      if (query.includes("oil") || query.includes("pets") || query.includes("safe")) {
-        return "Dilute essential oils before skin contact. Do not ingest, and keep away from pets." + serverNote;
-      }
-      if (query.includes("broken") || query.includes("leak") || query.includes("package")) {
-        return "If glass bottles leak or arrive broken, email support@aromahaven.co.uk within 48h." + serverNote;
-      }
-    }
-    
-    return "I didn't recognize that topic offline. Please make sure the FastAPI backend is running locally.";
   }
 })();

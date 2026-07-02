@@ -397,12 +397,40 @@ def test_support_brain_scenarios():
         
     print("\nALL SUPPORT BRAIN INTEGRATION SCENARIOS PASSED SUCCESSFULLY! ✅")
 
+def test_widget_endpoint_resolution():
+    print("\nStarting integration test for storefront widget configuration...")
+    import pathlib
+    
+    widget_path = pathlib.Path(__file__).parent.parent / "frontend" / "shopify-widget" / "hoverboard-chat-widget.js"
+    assert widget_path.exists(), f"Widget file does not exist at {widget_path}"
+    
+    with open(widget_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    # Check that old offline messages are removed
+    assert "Live Chatbot Server is offline" not in content, "Found old offline status text"
+    assert "Showing simulated offline reply" not in content, "Found old offline simulation text"
+    assert "Please make sure the FastAPI backend is running locally" not in content, "Found old local setup warning"
+    
+    # Check that production URL is defined as fallback
+    assert "https://commerce-support-console-production.up.railway.app" in content, "Production Railway URL is missing in widget script"
+    
+    # Check CORS defaults in main.py
+    main_path = pathlib.Path(__file__).parent / "app" / "main.py"
+    with open(main_path, "r", encoding="utf-8") as fm:
+        main_content = fm.read()
+    assert "https://hoverboardstore.co.uk" in main_content, "CORS origin hoverboardstore.co.uk is missing"
+    assert "https://www.hoverboardstore.co.uk" in main_content, "CORS origin www.hoverboardstore.co.uk is missing"
+    
+    print("\nALL STOREFRONT WIDGET API CONNECTION TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
         test_auto_escalation()
         test_archive_and_delete()
         test_support_brain_scenarios()
+        test_widget_endpoint_resolution()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")

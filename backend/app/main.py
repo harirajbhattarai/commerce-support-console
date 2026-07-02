@@ -20,12 +20,13 @@ origins = []
 if settings.ALLOWED_ORIGINS:
     origins = [orig.strip() for orig in settings.ALLOWED_ORIGINS.split(",") if orig.strip()]
 else:
-    # Default to local development domains
     origins = [
         "http://127.0.0.1:8000",
         "http://localhost:8000",
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "https://hoverboardstore.co.uk",
+        "https://www.hoverboardstore.co.uk"
     ]
 
 # If wildcard is explicitly used, allow_credentials must be False due to browser security restrictions.
