@@ -157,7 +157,7 @@ def generate_support_reply(
         if intent == "speak_to_human":
             reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
         elif intent == "battery_safety":
-            reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
+            reply_text = "Please stop using the hoverboard immediately. Do not charge it again. If it is safe, unplug it and keep it away from flammable materials. Do not attempt to repair the battery or charger yourself. Our support team has been notified and will reply here shortly. You can also contact contact@hoverboardstore.co.uk."
         elif intent == "order_issue":
             reply_text = "To help you with this order request, please provide your order reference number, full name, and billing postcode. Once verified, our support team will update you shortly."
         else:
@@ -238,7 +238,7 @@ def generate_support_reply(
             if any(kw in safety_lower for kw in ["smoke", "fire", "spark", "burning"]):
                 # Forced transfer if safety words are inside the bot output
                 return {
-                    "reply_text": "Thanks — I’ve passed this to our support team. A team member will reply here shortly.",
+                    "reply_text": "Please stop using the hoverboard immediately. Do not charge it again. If it is safe, unplug it and keep it away from flammable materials. Do not attempt to repair the battery or charger yourself. Our support team has been notified and will reply here shortly. You can also contact contact@hoverboardstore.co.uk.",
                     "intent": intent,
                     "confidence": 0.0,
                     "source_used": "LLM Output Safety Audit Safeguard",

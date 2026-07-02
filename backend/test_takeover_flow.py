@@ -343,7 +343,9 @@ def test_support_brain_scenarios():
         assert res4.status_code == 200
         data4 = res4.json()
         print(f"Case 4 Bot Reply: {data4['reply']}")
-        assert "support team" in data4["reply"].lower() or "representative" in data4["reply"].lower()
+        assert "stop using" in data4["reply"].lower()
+        assert "flammable" in data4["reply"].lower()
+        assert "contact@hoverboardstore.co.uk" in data4["reply"].lower()
         
         # Verify it got marked as escalated
         conv_res = client.get("/api/conversations", headers=headers)
@@ -623,7 +625,9 @@ def test_ai_support_agent_scenarios():
             assert res.status_code == 200
             data = res.json()
             print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
-            assert "support team" in data["reply"].lower() or "representative" in data["reply"].lower()
+            assert "stop using" in data["reply"].lower()
+            assert "flammable" in data["reply"].lower()
+            assert "contact@hoverboardstore.co.uk" in data["reply"].lower()
             # Verify escalated status in database
             conv_res = client.get("/api/conversations", headers=headers)
             log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == sid), None)
