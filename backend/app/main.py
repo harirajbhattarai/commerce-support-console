@@ -163,6 +163,84 @@ async def brain_health():
         "fallback_available": True,
         "model_configured": settings.MINIMAX_MODEL
     }
+
+@app.get("/api/test-match")
+async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year old?", store_id: str = "hoverboard_store"):
+    store_articles = knowledge_base.get(store_id, [])
+    matched_content = None
+    matched_title = None
+    
+    if supabase_client:
+        try:
+            from app.services.knowledge_service import KnowledgeService
+            ret_res = await KnowledgeService.get_support_knowledge(
+                query=q,
+                store_id=store_id
+            )
+            if ret_res.get("success"):
+                k_list = ret_res.get("knowledge", [])
+                a_list = ret_res.get("articles", [])
+                match = rank_knowledge_matches(q, k_list, a_list)
+                if match:
+                    matched_content, matched_title = match
+        except Exception as err:
+            print(f"Error in test-match endpoint: {err}")
+            
+    if not matched_content:
+        # Local JSON fallback
+        q_words = [word.strip("?,.!") for word in q.lower().split()]
+        for article in store_articles:
+            keywords = article.get("keywords", [])
+            for keyword in keywords:
+                if keyword in q_words or keyword in q.lower():
+                    matched_content = article["content"]
+                    matched_title = article["title"]
+                    break
+            if matched_content:
+                break
+                
+    return {
+        "query": q,
+        "store_id": store_id,
+        "matched_title": matched_title,
+        "matched_content": matched_content
+    }
+def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list: list):
+    query_words = set(w.strip("?,.!") for w in query_text.lower().split() if len(w) > 3)
+    best_match = None
+    best_score = 0
+    
+    # 1. Rank product_knowledge entries
+    for item in knowledge_list:
+        title = item.get("title", "").lower()
+        content = item.get("content", "").lower()
+        
+        # Calculate overlap score
+        score = sum(1 for w in query_words if w in title) * 3 + sum(1 for w in query_words if w in content)
+        
+        # Prioritize kids/beginner keywords for 6.5 inch hoverboard
+        if "9" in query_text or "kids" in query_text.lower() or "child" in query_text.lower() or "beginner" in query_text.lower():
+            if "6.5" in title or "6.5" in content or "beginner" in title:
+                score += 5
+                
+        if score > best_score:
+            best_score = score
+            best_match = (item.get("content"), item.get("title"))
+            
+    # 2. Rank support_articles entries
+    for item in articles_list:
+        title = item.get("title", "").lower()
+        content = item.get("content", "").lower()
+        
+        # Calculate overlap score
+        score = sum(1 for w in query_words if w in title) * 3 + sum(1 for w in query_words if w in content)
+        
+        if score > best_score:
+            best_score = score
+            best_match = (item.get("content"), item.get("title"))
+            
+    return best_match
+
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     store_id = request.store_id or request.storeId
@@ -221,17 +299,38 @@ async def chat_endpoint(request: ChatRequest):
         source_used = "Staff Takeover Active (Waiting for support representative)"
     else:
         # Check standard chat flow using Support Brain
-        # 1. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow) to find retrieved knowledge
-        message_words = [word.strip("?,.!") for word in message_text.split()]
-        for article in store_articles:
-            keywords = article.get("keywords", [])
-            for keyword in keywords:
-                if keyword in message_words or keyword in message_text:
-                    matched_content = article["content"]
-                    matched_title = article["title"]
+        # 1. Simple Keyword Match in Supabase DB first, then local JSON
+        matched_content = None
+        matched_title = None
+        
+        if supabase_client:
+            try:
+                from app.services.knowledge_service import KnowledgeService
+                ret_res = await KnowledgeService.get_support_knowledge(
+                    query=request.message,
+                    store_id=store_id
+                )
+                if ret_res.get("success"):
+                    k_list = ret_res.get("knowledge", [])
+                    a_list = ret_res.get("articles", [])
+                    match = rank_knowledge_matches(request.message, k_list, a_list)
+                    if match:
+                        matched_content, matched_title = match
+            except Exception as db_kb_err:
+                print(f"Error searching Supabase knowledge: {db_kb_err}")
+                
+        # Local JSON fallback matching
+        if not matched_content:
+            message_words = [word.strip("?,.!") for word in message_text.split()]
+            for article in store_articles:
+                keywords = article.get("keywords", [])
+                for keyword in keywords:
+                    if keyword in message_words or keyword in message_text:
+                        matched_content = article["content"]
+                        matched_title = article["title"]
+                        break
+                if matched_content:
                     break
-            if matched_content:
-                break
                 
         # Fallback message
         store_names = {

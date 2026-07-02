@@ -118,14 +118,19 @@ class KnowledgeService:
             prod_query = supabase_client.table("products").select("*")
             if store_id:
                 prod_query = prod_query.eq("store_id", store_id)
+                
+            stop_words = {"which", "what", "where", "when", "from", "with", "your", "that", "this", "have", "here", "there", "about", "then", "their", "them", "they", "will", "would", "could", "should"}
+            
             if product_type:
                 prod_query = prod_query.eq("product_type", product_type)
             else:
                 # Fallback keyword match in product title
-                # We extract first word of query as simple match search
-                words = [w for w in query_lower.split() if len(w) > 3]
+                words = [w for w in query_lower.split() if len(w) > 3 and w not in stop_words]
+                if not words:
+                    words = [w for w in query_lower.split() if len(w) > 3]
                 if words:
-                    prod_query = prod_query.ilike("product_title", f"%{words[0]}%")
+                    or_clauses = [f"product_title.ilike.%{w}%" for w in words[:3]]
+                    prod_query = prod_query.or_(",".join(or_clauses))
             
             prod_resp = prod_query.execute()
             if prod_resp.data:
@@ -140,13 +145,22 @@ class KnowledgeService:
                         matched_knowledge.append(entry)
 
             # 3. Search general support articles table by query keywords
-            keywords = [w for w in query_lower.split() if len(w) > 3]
+            keywords = [w for w in query_lower.split() if len(w) > 3 and w not in stop_words]
+            if not keywords:
+                keywords = [w for w in query_lower.split() if len(w) > 3]
+                
             if keywords:
                 art_query = supabase_client.table("support_articles").select("*")
                 if store_id:
                     art_query = art_query.eq("store_id", store_id)
-                # Search using the first matched keyword for simplicity in standard SQL
-                art_resp = art_query.ilike("content", f"%{keywords[0]}%").execute()
+                
+                # Combine up to 3 keywords into an OR search across content and title
+                or_clauses = []
+                for kw in keywords[:3]:
+                    or_clauses.append(f"content.ilike.%{kw}%")
+                    or_clauses.append(f"title.ilike.%{kw}%")
+                
+                art_resp = art_query.or_(",".join(or_clauses)).execute()
                 if art_resp.data:
                     matched_articles = art_resp.data
 
