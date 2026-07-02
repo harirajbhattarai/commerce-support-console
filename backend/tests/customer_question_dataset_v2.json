@@ -1,0 +1,2812 @@
+[
+  {
+    "text": "which hoverboard should i get for my son hes never had one",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what one do u recommend for beginners",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "beginner"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "best hoverboard for a gift",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "im not sure what to buy which is most popular",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what do you recommend for kids",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "which is good for outdoor use",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what hoverboard is best value for money",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do u have anything good for adults",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "whats the difference between the g1 pro and g1 lite",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my son is 7 can he use a hoverboard",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is it safe for a 5 year old to ride",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what age is ok for hoverboard",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my daughter is 9 years old which one for her",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is there a minimum age to use these",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "too young for hoverboard my kid is 6",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is 8.5 too big for a child",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "whats the difference between 6.5 and 8.5 inch",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5",
+      "8.5"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "which size for indoor use",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is 6.5 ok for grass and rough paths",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "8.5"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "which wheel size is better for off road",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "8.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what is a hoverkart",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "kart"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "does the kart work with all boards",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is the kart included with the hoverboard",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "kart"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how do i attach the kart to the board",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i buy a kart separately or only as bundle",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what one is better for kids hoverboard or kart bundle",
+    "expected_intent": "hoverkart_guidance",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "kart"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how long does delivery take",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "day"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do u do next day delivery",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "next-day",
+      "next day"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is delivery free in uk",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "free"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how long uk delivery standard shipping",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "day"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i get it tomorrow if i order now",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "next"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you ship to scotland",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "uk",
+      "free"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "standard shipping how many days",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "2",
+      "3"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "when will it arrive if i order today",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "day"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "where is my order",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "whats my tracking number",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "my parcel hasnt arrived its been a week",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "i ordered 3 days ago and nothing yet",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "tracking not updating where is it",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "i ordered yesterday tracking not received",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "order number 54321 where is it",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "can i return it",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return",
+      "30"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what is your returns policy",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return",
+      "day"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how do i send it back",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "30 day return is that right",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "30",
+      "return"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i get a refund if i change my mind",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "if my child dont like it can i return",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want to return my hoverboard its not what i expected",
+    "expected_intent": "return_request",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "can you start a return for me please",
+    "expected_intent": "return_request",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "i need to send it back for refund",
+    "expected_intent": "return_request",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "please process my return i changed my mind after buying",
+    "expected_intent": "return_request",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "how many months warranty do you give",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "12"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what does warranty cover",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "warranty"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is my board still under warranty",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "12",
+      "warranty"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "warranty details please",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "warranty"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "if it breaks after few weeks what happens",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "12 month warranty is that right",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "12",
+      "warranty"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my board stopped working after 2 months i want warranty repair",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "its a manufacturing fault the motor just stopped",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "warranty claim my hoverboard is broken and its only 3 months old",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "stopped working 3 months after buying want replacement",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "it failed within warranty period",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "my hoverboard stopped working",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "it just died completely dead",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "it wont work anymore what do i do",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "if it stops working what do i do",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "it just stopped mid ride and wont turn back on",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "hoverboard not turning on",
+    "expected_intent": "not_turning_on",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "wont switch on at all",
+    "expected_intent": "not_turning_on",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "power button not working nothing happens",
+    "expected_intent": "not_turning_on",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "press power nothing happens dead",
+    "expected_intent": "not_turning_on",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "not powering up at all tried everything",
+    "expected_intent": "not_turning_on",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "charger light not coming on",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "charg"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "not charging at all",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "charg"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "green light comes on straight away wont charge",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "charg"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how long does it take to fully charge",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "charging port looks bent",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "blinks red when i plug it in to charge",
+    "expected_intent": "charging_issue",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "charg"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how do i reset it",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "reset",
+      "flat"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "needs calibration how do i do it",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "flat"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "its beeping and flashing red",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "reset"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "red light flashing what does it mean",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "reset"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how to recalibrate hoverboard",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "flat",
+      "power"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "spinning in circles not going straight",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "calibrat",
+      "reset"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "balance mode not working properly",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my board smells burning",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable",
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [
+      "try",
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "smoke coming from the battery",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "try",
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "its catching fire help",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "sparks coming from the charger",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "battery is swelling what do i do",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "hoverboard overheating while charging really hot",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "battery getting very hot what should i do",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable",
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "it is making smoke while charging",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my hoverboard smells like burning plastic",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "charger is extremely hot and smoking a bit",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "it arrived damaged the box was crushed",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "arrived broken screen cracked on delivery",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "damaged when i opened it big scratch on top",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "item damaged in post clearly dropped",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "hoverboard was smashed when delivered",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "charger not in the box where is it",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "missing charger in my delivery",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "no manual included in the box",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "parts missing from my order only got one foot pad",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "kart attachment wasnt in the package",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "power adapter missing from the box what do i do",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "received wrong colour i ordered black got white",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "got the wrong model this isnt what i ordered",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "sent wrong hoverboard i ordered the 8.5 got 6.5",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "this isnt what i ordered completely different product",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "wrong item in box i ordered a kart bundle but only got the board",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "cancel my order please",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "i want to cancel i changed my mind",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "please cancel order 12345",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "stop the order i dont want it anymore",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "can you cancel my order before it ships",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "change my delivery address please",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "i put wrong address on my order can you fix it",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "update shipping address wrong postcode",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "can you change where its going i moved house",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "wrong address on order need to change it urgently",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "do you have any discount codes",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team",
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "any vouchers or promo codes available",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "10 percent off newsletter how do i get it",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "10"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is there a student discount",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "any sale on right now",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i get a discount if i buy two",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i speak to someone from the support team",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want to talk to a human",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "get me a real person",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i need a human not a bot",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "stop giving me bot answers let me speak to someone",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want to speak to a person",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "speak to customer service now",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "transfer me to a real agent",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "this is disgusting service absolutely terrible",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want to make a formal complaint",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "your customer service is terrible im going to report you",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "im contacting trading standards this is unacceptable",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "absolute rubbish product and service i want my money back",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "worst experience ever im leaving a bad review everywhere",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "hello",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team",
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "hi there",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what can you help with",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "are you open today",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i ask a question",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you sell spare parts",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "question about my order",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "hey anyone there",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want to buy a hoverboard for christmas whats best",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what colours do you have in the 6.5 inch",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "are your hoverboards safe to use",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "whats the weight limit on the 6.5 hoverboard",
+    "expected_intent": "age_suitability",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is the 8.5 hoverboard good for rough terrain and mud",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "8.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you deliver to northern ireland",
+    "expected_intent": "delivery_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "free",
+      "uk"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "has my order been dispatched yet",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "no one sent me tracking info its been 2 days",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "does return have to be unused condition",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "return"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want my money back its rubbish quality",
+    "expected_intent": "return_request",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "does physical damage void the warranty",
+    "expected_intent": "warranty_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "warranty",
+      "physical damage"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "the motor makes a grinding noise after one month",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "one wheel stopped spinning completely only 6 weeks old",
+    "expected_intent": "warranty_fault",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "it completely died wont turn on nothing",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "tried resetting but still beeping after",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "one side goes faster than the other",
+    "expected_intent": "reset_calibration",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "calibrat",
+      "reset"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i think its going to catch fire the battery looks weird",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "arrived with a dent on the side and scratches everywhere",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "got sent the wrong colour blue instead of red",
+    "expected_intent": "wrong_item",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "cancel the order right now before you send it",
+    "expected_intent": "cancel_order",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "need to change my postcode on the order its wrong",
+    "expected_intent": "change_address",
+    "expected_route": "verify",
+    "risk_level": "high",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "first time buyer any welcome offers",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "this is the worst product ive ever bought total waste of money",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "are your products ukca certified",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you have electric scooters for kids",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "does it come with a carry bag",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i use it on the pavement or road",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "private land"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "is it waterproof can i ride in the rain",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how fast does the 8.5 go",
+    "expected_intent": "size_guidance_6_5_vs_8_5",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "8.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what bluetooth speaker is in the hoverboard",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "my child fell off and got hurt is this normal",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do i need to wear a helmet",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "helmet",
+      "protective"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "where is your shop located can i visit",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you have a phone number i can call",
+    "expected_intent": "human_request",
+    "expected_route": "escalate",
+    "risk_level": "medium",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "whats your email address for returns",
+    "expected_intent": "return_policy",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "what payment methods do you accept",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do you do klarna or pay later",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i ordered two weeks ago and its still not here this is a joke",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "are hoverboards legal in the uk",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "private land"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "the led lights stopped working on my board",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "charger getting really hot when plugged in is that normal",
+    "expected_intent": "battery_safety_high_risk",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "stop using",
+      "flammable"
+    ],
+    "must_not_include": [
+      "reset"
+    ],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "can i buy a replacement charger",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "im never buying from you again this is awful",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "thanks thats all i needed",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "ok cheers mate",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "escalat"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how heavy is the 6.5 hoverboard",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "6.5"
+    ],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "do your hoverboards have samsung batteries",
+    "expected_intent": "product_recommendation",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i want a refund and a complaint logged this is disgraceful",
+    "expected_intent": "complaint",
+    "expected_route": "escalate",
+    "risk_level": "high",
+    "must_include": [
+      "support team"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "one foot pad keeps slipping off while riding",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "the bluetooth doesnt connect to my phone",
+    "expected_intent": "stopped_working",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "i bought 2 and one came with no charger",
+    "expected_intent": "missing_part",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "what happens if royal mail loses my parcel",
+    "expected_intent": "order_tracking",
+    "expected_route": "verify",
+    "risk_level": "medium",
+    "must_include": [
+      "order"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": false,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "the box was open when delivered looks tampered with",
+    "expected_intent": "damaged_on_arrival",
+    "expected_route": "collect_details",
+    "risk_level": "medium",
+    "must_include": [
+      "contact@hoverboardstore.co.uk"
+    ],
+    "must_not_include": [],
+    "should_escalate": true,
+    "should_create_case": true,
+    "requires_shopify_lookup": true
+  },
+  {
+    "text": "is there a black friday deal coming",
+    "expected_intent": "discount_question",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  },
+  {
+    "text": "how do i connect the bluetooth speaker",
+    "expected_intent": "unknown_general",
+    "expected_route": "answer",
+    "risk_level": "low",
+    "must_include": [],
+    "must_not_include": [
+      "support team"
+    ],
+    "should_escalate": false,
+    "should_create_case": false,
+    "requires_shopify_lookup": false
+  }
+]
