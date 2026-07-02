@@ -424,6 +424,85 @@ def test_widget_endpoint_resolution():
     
     print("\nALL STOREFRONT WIDGET API CONNECTION TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_shopify_widget_payload_variations():
+    print("\nStarting integration test for Shopify widget payload variations...")
+    
+    # Configure token
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+    
+    created_sessions = []
+    
+    try:
+        # 1. Payload with storeId and sessionId -> "tell me about hoverboard battery safety"
+        session_id_1 = f"test-payload-1-{uuid.uuid4()}"
+        created_sessions.append(session_id_1)
+        res1 = client.post("/api/chat", json={
+            "storeId": "hoverboard_store",
+            "message": "tell me about hoverboard battery safety",
+            "sessionId": session_id_1
+        })
+        assert res1.status_code == 200, f"Payload variation 1 failed: {res1.text}"
+        print("Variation 1 (storeId/sessionId, Battery Safety) passed. ✅")
+        
+        # 2. Payload with store_id and session_id -> "how long is delivery"
+        session_id_2 = f"test-payload-2-{uuid.uuid4()}"
+        created_sessions.append(session_id_2)
+        res2 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "how long is delivery",
+            "session_id": session_id_2
+        })
+        assert res2.status_code == 200, f"Payload variation 2 failed: {res2.text}"
+        print("Variation 2 (store_id/session_id, Shipping Times) passed. ✅")
+        
+        # 3. Payload with store_id, conversation_id, channel -> "can I return it"
+        session_id_3 = f"test-payload-3-{uuid.uuid4()}"
+        created_sessions.append(session_id_3)
+        res3 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "can I return it",
+            "conversation_id": session_id_3,
+            "channel": "shopify_widget"
+        })
+        assert res3.status_code == 200, f"Payload variation 3 failed: {res3.text}"
+        print("Variation 3 (store_id/conversation_id/channel, Return Policy) passed. ✅")
+        
+        # 4. Payload with store_id and conversation_id -> "Which hoverboard is best for a 9 year old?"
+        session_id_4 = f"test-payload-4-{uuid.uuid4()}"
+        created_sessions.append(session_id_4)
+        res4 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Which hoverboard is best for a 9 year old?",
+            "conversation_id": session_id_4
+        })
+        assert res4.status_code == 200, f"Payload variation 4 failed: {res4.text}"
+        print("Variation 4 (store_id/conversation_id, Product Recommendation) passed. ✅")
+        
+        # 5. Payload with store_id and conversation_id -> "My hoverboard smells like burning"
+        session_id_5 = f"test-payload-5-{uuid.uuid4()}"
+        created_sessions.append(session_id_5)
+        res5 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "My hoverboard smells like burning",
+            "conversation_id": session_id_5
+        })
+        assert res5.status_code == 200, f"Payload variation 5 failed: {res5.text}"
+        print("Variation 5 (store_id/conversation_id, Smells like burning) passed. ✅")
+        
+    finally:
+        # Cleanup
+        print("[Cleanup] Cleaning up payload variations test sessions...")
+        for sid in created_sessions:
+            try:
+                client.delete(f"/api/conversations/{sid}", headers=headers)
+            except Exception as e:
+                print(f"Failed to delete test session {sid}: {e}")
+                
+    print("\nALL SHOPIFY WIDGET PAYLOAD VARIATIONS TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
@@ -431,6 +510,7 @@ if __name__ == "__main__":
         test_archive_and_delete()
         test_support_brain_scenarios()
         test_widget_endpoint_resolution()
+        test_shopify_widget_payload_variations()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")

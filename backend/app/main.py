@@ -47,9 +47,13 @@ app.include_router(knowledge_router)
 # DATA MODELS
 # --------------------------------------------------------------------------
 class ChatRequest(BaseModel):
-    store_id: str
+    store_id: Optional[str] = None
+    storeId: Optional[str] = None
     message: str
-    conversation_id: str
+    conversation_id: Optional[str] = None
+    session_id: Optional[str] = None
+    sessionId: Optional[str] = None
+    channel: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
@@ -161,9 +165,19 @@ async def brain_health():
     }
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    store_id = request.store_id
+    store_id = request.store_id or request.storeId
+    if not store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing store_id or storeId parameter."
+        )
+    conversation_id = request.conversation_id or request.session_id or request.sessionId
+    if not conversation_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing conversation_id, session_id, or sessionId parameter."
+        )
     message_text = request.message.strip().lower()
-    conversation_id = request.conversation_id
 
     # 1. Validate Store ID
     if store_id not in knowledge_base:
@@ -249,25 +263,36 @@ async def chat_endpoint(request: ChatRequest):
             except Exception as e:
                 print(f"Error fetching historical context for brain: {e}")
                 
-        # 3. Call Support Brain
-        from app.services.support_brain import generate_support_reply
-        brain_result = generate_support_reply(
-            store_id=store_id,
-            session_id=conversation_id,
-            user_message=request.message,
-            previous_context=previous_context,
-            retrieved_knowledge=matched_content,
-            rules_fallback_reply=rules_fallback_reply,
-            matched_title=matched_title
-        )
-        
-        reply = brain_result["reply_text"]
-        is_escalated = brain_result["should_escalate"]
-        intent = brain_result["intent"]
-        confidence = brain_result["confidence"]
-        escalation_reason = brain_result["escalation_reason"]
-        brain_mode = brain_result["brain_mode"]
-        source_used = brain_result["source_used"]
+        # 3. Call Support Brain safely
+        try:
+            from app.services.support_brain import generate_support_reply
+            brain_result = generate_support_reply(
+                store_id=store_id,
+                session_id=conversation_id,
+                user_message=request.message,
+                previous_context=previous_context,
+                retrieved_knowledge=matched_content,
+                rules_fallback_reply=rules_fallback_reply,
+                matched_title=matched_title
+            )
+            
+            reply = brain_result["reply_text"]
+            is_escalated = brain_result["should_escalate"]
+            intent = brain_result["intent"]
+            confidence = brain_result["confidence"]
+            escalation_reason = brain_result["escalation_reason"]
+            brain_mode = brain_result["brain_mode"]
+            source_used = brain_result["source_used"]
+        except Exception as brain_err:
+            print(f"ERROR: Support Brain crashed: {brain_err}")
+            # Safe absolute fallback
+            reply = matched_content if matched_content else rules_fallback_reply
+            is_escalated = matched_content is None
+            intent = "unknown"
+            confidence = 1.0 if matched_content else 0.0
+            escalation_reason = f"Support Brain exception: {str(brain_err)}"
+            brain_mode = "fallback"
+            source_used = matched_title
 
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
@@ -279,23 +304,27 @@ async def chat_endpoint(request: ChatRequest):
                 escalated = False
                 status = "new"
                 
-            # Serialize metadata into matched_source to bypass schema limitations safely
-            import json
-            safe_source = (source_used[:80] + "...") if source_used and len(source_used) > 80 else source_used
-            safe_reason = (escalation_reason[:80] + "...") if escalation_reason and len(escalation_reason) > 80 else escalation_reason
-            
-            meta_payload = {
-                "brain_mode": brain_mode,
-                "intent": intent,
-                "source": safe_source,
-                "confidence": confidence,
-                "escalation_reason": safe_reason
-            }
-            matched_source_str = json.dumps(meta_payload)
-            if len(matched_source_str) > 255:
-                meta_payload["source"] = safe_source[:40] if safe_source else None
-                meta_payload["escalation_reason"] = safe_reason[:40] if safe_reason else None
+            # Serialize metadata into matched_source safely
+            try:
+                import json
+                safe_source = (source_used[:80] + "...") if source_used and len(source_used) > 80 else source_used
+                safe_reason = (escalation_reason[:80] + "...") if escalation_reason and len(escalation_reason) > 80 else escalation_reason
+                
+                meta_payload = {
+                    "brain_mode": brain_mode,
+                    "intent": intent,
+                    "source": safe_source,
+                    "confidence": confidence,
+                    "escalation_reason": safe_reason
+                }
                 matched_source_str = json.dumps(meta_payload)
+                if len(matched_source_str) > 255:
+                    meta_payload["source"] = safe_source[:40] if safe_source else None
+                    meta_payload["escalation_reason"] = safe_reason[:40] if safe_reason else None
+                    matched_source_str = json.dumps(meta_payload)
+            except Exception as ser_err:
+                print(f"ERROR: Failed to serialize metadata: {ser_err}")
+                matched_source_str = source_used
             
             log_entry = {
                 "store_id": store_id,
