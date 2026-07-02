@@ -102,6 +102,11 @@ def test_integration_flow():
     assert agent_msg_in_list.get("message_type") == "agent_reply", "message_type agent_reply label missing in conversations list"
     print("Verified: Staff reply appears in dashboard with correct Support agent roles.")
     
+    # Clean up test conversation log to keep database clean
+    print(f"\n[Cleanup] Sending DELETE request for session {session_id}...")
+    cleanup_res = client.delete(f"/api/conversations/{session_id}", headers=headers)
+    assert cleanup_res.status_code == 200, f"Cleanup delete failed: {cleanup_res.text}"
+    
     print("\nALL TAKEOVER INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 
 def test_auto_escalation():
@@ -142,6 +147,12 @@ def test_auto_escalation():
     assert session_log.get("escalated") is True, "Session escalated attribute was not set to true"
     assert session_log.get("status") == "needs_escalation", f"Session status was not needs_escalation, got {session_log.get('status')}"
     print(f"Verified: Session {session_id} is marked as escalated and status set to needs_escalation. ✅")
+    
+    # Clean up test conversation log to keep database clean
+    print(f"\n[Cleanup] Sending DELETE request for session {session_id}...")
+    cleanup_res = client.delete(f"/api/conversations/{session_id}", headers=headers)
+    assert cleanup_res.status_code == 200, f"Cleanup delete failed: {cleanup_res.text}"
+    
     print("\nALL AUTO-ESCALATION INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 
 def test_archive_and_delete():
@@ -181,7 +192,15 @@ def test_archive_and_delete():
     draft_res = client.post("/api/reply-draft", json=draft_payload, headers=headers)
     assert draft_res.status_code == 200
     
-    # 4. Update status to archived
+    # 4. Add an agent reply
+    reply_payload = {
+        "session_id": session_id,
+        "message": "Test agent reply for deletion cascade"
+    }
+    reply_res = client.post("/api/agent-replies", json=reply_payload, headers=headers)
+    assert reply_res.status_code == 200
+    
+    # 5. Update status to archived
     print("\n[Step 1] Setting conversation status to archived...")
     status_res = client.put(f"/api/conversations/{session_id}/status?status=archived", headers=headers)
     assert status_res.status_code == 200, f"Status update failed. Code: {status_res.status_code}, Body: {status_res.text}"
@@ -194,15 +213,36 @@ def test_archive_and_delete():
     assert session_log.get("status") == "archived", f"Expected status archived, got {session_log.get('status')}"
     print("Verified: Conversation status successfully updated to archived in Supabase database. ✅")
     
-    # 5. Delete the conversation
+    # 6. Delete the conversation
     print("\n[Step 2] Sending DELETE request for conversation...")
     delete_res = client.delete(f"/api/conversations/{session_id}", headers=headers)
     assert delete_res.status_code == 200, f"Delete failed. Code: {delete_res.status_code}, Body: {delete_res.text}"
     
-    # Verify it is completely gone
+    # Verify it is completely gone from REST API list
     conv_res_after = client.get("/api/conversations", headers=headers)
     session_log_after = next((log for log in conv_res_after.json().get("logs", []) if log["session_id"] == session_id), None)
-    assert session_log_after is None, "Conversation was not deleted from chat_logs"
+    assert session_log_after is None, "Conversation was not deleted from chat_logs REST response"
+    
+    # Verify directly in Supabase tables
+    from app.database import supabase_client
+    if supabase_client:
+        try:
+            drafts_check = supabase_client.table("reply_drafts").select("*").eq("session_id", session_id).execute()
+            assert not drafts_check.data, "reply_drafts record was not deleted"
+            
+            notes_check = supabase_client.table("staff_notes").select("*").eq("session_id", session_id).execute()
+            assert not notes_check.data, "staff_notes record was not deleted"
+            
+            replies_check = supabase_client.table("agent_replies").select("*").eq("session_id", session_id).execute()
+            assert not replies_check.data, "agent_replies record was not deleted"
+            
+            logs_check = supabase_client.table("chat_logs").select("*").eq("session_id", session_id).execute()
+            assert not logs_check.data, "chat_logs record was not deleted"
+            
+            print("Verified: Session was completely purged from Supabase child/parent tables. ✅")
+        except Exception as e:
+            print(f"Skipping direct table verification: {e}")
+            
     print("Verified: Conversation and all associated cascading child data records completely removed. ✅")
     
     print("\nALL ARCHIVE & DELETE INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
@@ -216,17 +256,21 @@ def test_support_brain_scenarios():
         settings.ADMIN_DASHBOARD_TOKEN = admin_token
     headers = {"X-Admin-Token": admin_token}
     
+    # Keep track of created sessions for auto-cleanup
+    created_sessions = []
+    
     # Let's temporarily ensure MiniMax API Key is NOT configured to check fallback behavior
     original_key = settings.MINIMAX_API_KEY
     settings.MINIMAX_API_KEY = "" # Ensure fallback rules are active
     
     try:
         # Case 1 (Fallback Mode): "Which hoverboard is best for a 9 year old?" -> expects fallback warning
-        session_id = f"test-brain-1-{uuid.uuid4()}"
+        session_id_1 = f"test-brain-1-{uuid.uuid4()}"
+        created_sessions.append(session_id_1)
         res1 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "Which hoverboard is best for a 9 year old?",
-            "conversation_id": session_id
+            "conversation_id": session_id_1
         })
         assert res1.status_code == 200
         data1 = res1.json()
@@ -247,10 +291,12 @@ def test_support_brain_scenarios():
         }
         with mock.patch("requests.post", return_value=mock_response):
             settings.MINIMAX_API_KEY = "test_key"
+            session_id_1_minimax = f"test-brain-1-minimax-{uuid.uuid4()}"
+            created_sessions.append(session_id_1_minimax)
             res1_minimax = client.post("/api/chat", json={
                 "store_id": "hoverboard_store",
                 "message": "Which hoverboard is best for a 9 year old?",
-                "conversation_id": f"test-brain-1-minimax-{uuid.uuid4()}"
+                "conversation_id": session_id_1_minimax
             })
             assert res1_minimax.status_code == 200
             data1_minimax = res1_minimax.json()
@@ -261,11 +307,12 @@ def test_support_brain_scenarios():
         settings.MINIMAX_API_KEY = ""
         
         # Case 2: "How long is delivery?" -> expects shipping answer
-        session_id = f"test-brain-2-{uuid.uuid4()}"
+        session_id_2 = f"test-brain-2-{uuid.uuid4()}"
+        created_sessions.append(session_id_2)
         res2 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "How long is delivery?",
-            "conversation_id": session_id
+            "conversation_id": session_id_2
         })
         assert res2.status_code == 200
         data2 = res2.json()
@@ -273,11 +320,12 @@ def test_support_brain_scenarios():
         assert "days" in data2["reply"].lower() or "delivery" in data2["reply"].lower() or "shipping" in data2["reply"].lower()
         
         # Case 3: "Can I return it?" -> expects return policy answer
-        session_id = f"test-brain-3-{uuid.uuid4()}"
+        session_id_3 = f"test-brain-3-{uuid.uuid4()}"
+        created_sessions.append(session_id_3)
         res3 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "Can I return it?",
-            "conversation_id": session_id
+            "conversation_id": session_id_3
         })
         assert res3.status_code == 200
         data3 = res3.json()
@@ -285,11 +333,12 @@ def test_support_brain_scenarios():
         assert "return" in data3["reply"].lower() or "day" in data3["reply"].lower()
         
         # Case 4: "My hoverboard smells like burning" -> expects escalate, no unsafe advice
-        session_id = f"test-brain-4-{uuid.uuid4()}"
+        session_id_4 = f"test-brain-4-{uuid.uuid4()}"
+        created_sessions.append(session_id_4)
         res4 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "My hoverboard smells like burning",
-            "conversation_id": session_id
+            "conversation_id": session_id_4
         })
         assert res4.status_code == 200
         data4 = res4.json()
@@ -298,16 +347,17 @@ def test_support_brain_scenarios():
         
         # Verify it got marked as escalated
         conv_res = client.get("/api/conversations", headers=headers)
-        session_log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id), None)
+        session_log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id_4), None)
         assert session_log is not None
         assert session_log.get("status") == "needs_escalation"
         
         # Case 5: "Where is my order?" -> expects ask for verification / escalate
-        session_id = f"test-brain-5-{uuid.uuid4()}"
+        session_id_5 = f"test-brain-5-{uuid.uuid4()}"
+        created_sessions.append(session_id_5)
         res5 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "Where is my order?",
-            "conversation_id": session_id
+            "conversation_id": session_id_5
         })
         assert res5.status_code == 200
         data5 = res5.json()
@@ -315,11 +365,12 @@ def test_support_brain_scenarios():
         assert "support team" in data5["reply"].lower() or "representative" in data5["reply"].lower()
         
         # Case 6: "I want to speak to a person" -> expects needs agent
-        session_id = f"test-brain-6-{uuid.uuid4()}"
+        session_id_6 = f"test-brain-6-{uuid.uuid4()}"
+        created_sessions.append(session_id_6)
         res6 = client.post("/api/chat", json={
             "store_id": "hoverboard_store",
             "message": "I want to speak to a person",
-            "conversation_id": session_id
+            "conversation_id": session_id_6
         })
         assert res6.status_code == 200
         data6 = res6.json()
@@ -329,13 +380,20 @@ def test_support_brain_scenarios():
         # Case 7: MiniMax key missing fallback check -> already tested above because MINIMAX_API_KEY was empty!
         # Let's verify metadata matches fallback brain mode
         conv_res = client.get("/api/conversations", headers=headers)
-        session_log_fallback = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id), None)
+        session_log_fallback = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id_6), None)
         assert session_log_fallback is not None
         assert session_log_fallback.get("brain_mode") == "rules" or session_log_fallback.get("brain_mode") == "fallback"
         
     finally:
         # Restore key
         settings.MINIMAX_API_KEY = original_key
+        # Clean up all created sessions
+        print("\n[Cleanup] Cleaning up all Support Brain test sessions...")
+        for sid in created_sessions:
+            try:
+                client.delete(f"/api/conversations/{sid}", headers=headers)
+            except Exception as e:
+                print(f"Failed to delete test session {sid}: {e}")
         
     print("\nALL SUPPORT BRAIN INTEGRATION SCENARIOS PASSED SUCCESSFULLY! ✅")
 

@@ -2130,22 +2130,8 @@
             activeSessionId = null;
             deleteConfirmInput.value = "";
             
-            // Clear details sheet
-            detailStoreId.textContent = "—";
-            detailSessionId.textContent = "—";
-            detailEscalated.textContent = "—";
-            detailCreatedAt.textContent = "—";
-            detailMatchedSource.textContent = "—";
-            detailConfidence.textContent = "—";
-            detailBrainMode.textContent = "—";
-            detailIntent.textContent = "—";
-            rowEscalationReason.style.display = "none";
-            detailEscalationReason.textContent = "—";
-            
-            // Hide panels
-            actionsSection.style.display = "none";
-            notesSection.style.display = "none";
-            composerSection.style.display = "none";
+            // Clear details sheet and chat interface
+            clearActiveChat();
             
             // Re-render
             renderDashboard(searchInput.value);

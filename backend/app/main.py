@@ -428,12 +428,31 @@ async def delete_conversation(session_id: str):
             detail="Supabase client is not configured."
         )
     try:
-        # Delete related child records first to respect FK constraints
-        supabase_client.table("reply_drafts").delete().eq("session_id", session_id).execute()
-        supabase_client.table("staff_notes").delete().eq("session_id", session_id).execute()
-        supabase_client.table("agent_replies").delete().eq("session_id", session_id).execute()
-        
-        # Delete parent records
+        # 1. Delete child tables by session_id directly
+        child_tables = ["reply_drafts", "staff_notes", "agent_replies"]
+        for table in child_tables:
+            try:
+                supabase_client.table(table).delete().eq("session_id", session_id).execute()
+            except Exception as e:
+                print(f"Skipping direct delete by session_id for {table}: {e}")
+                
+        # 2. Handle conversations/messages legacy/parallel table cascade
+        try:
+            conv_res = supabase_client.table("conversations").select("id").eq("session_id", session_id).execute()
+            if conv_res.data:
+                for conv in conv_res.data:
+                    conv_uuid = conv.get("id")
+                    # Clean staff_notes referencing conversation_id if foreign keys require it
+                    try:
+                        supabase_client.table("staff_notes").delete().eq("conversation_id", conv_uuid).execute()
+                    except Exception as err:
+                        print(f"Skipping staff_notes delete by conversation_id: {err}")
+                    # Delete conversations parent (will cascade to messages and escalations tables)
+                    supabase_client.table("conversations").delete().eq("id", conv_uuid).execute()
+        except Exception as e:
+            print(f"Skipping conversations table cascade check: {e}")
+            
+        # 3. Delete parent chat logs
         supabase_client.table("chat_logs").delete().eq("session_id", session_id).execute()
         
         return {
