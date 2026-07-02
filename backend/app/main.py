@@ -40,6 +40,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_robots_header(request, call_next):
+    response = await call_next(request)
+    if settings.ENVIRONMENT.upper() == "STAGING":
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
 from app.routes.knowledge import router as knowledge_router
 app.include_router(knowledge_router)
 
@@ -135,7 +142,27 @@ async def serve_admin_dashboard(token: Optional[str] = None):
         
     with open(admin_file_path, "r", encoding="utf-8") as f:
         html_content = f.read()
-    return HTMLResponse(content=html_content)
+        
+    # Inject environment label
+    env_name = settings.ENVIRONMENT.upper()
+    if env_name == "PRODUCTION":
+        env_badge = f'<span class="env-badge" style="background-color: var(--accent-green, #067d62); color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-left: 8px;">{env_name}</span>'
+    else: # STAGING
+        env_badge = f'<span class="env-badge" style="background-color: var(--amzn-orange, #ff9900); color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-left: 8px;">{env_name}</span>'
+        
+    html_content = html_content.replace("<!-- APP_ENV_PLACEHOLDER -->", env_badge)
+    
+    # Inject noindex tags if staging
+    robots_tag = ""
+    if env_name == "STAGING":
+        robots_tag = '<meta name="robots" content="noindex, nofollow">'
+    html_content = html_content.replace("<!-- ROBOTS_PLACEHOLDER -->", robots_tag)
+    
+    headers = {}
+    if env_name == "STAGING":
+        headers["X-Robots-Tag"] = "noindex, nofollow"
+        
+    return HTMLResponse(content=html_content, headers=headers)
 
 @app.get("/health")
 def health_check():

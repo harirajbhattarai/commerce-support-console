@@ -30,6 +30,7 @@ class Settings:
     # MiniMax Configuration
     MINIMAX_API_KEY: str = os.getenv("MINIMAX_API_KEY", "")
     MINIMAX_MODEL: str = os.getenv("MINIMAX_MODEL", "abab6.5g-chat")
+    ENVIRONMENT: str = os.getenv("APP_ENV", "PRODUCTION")
 
 
 # Instantiate settings to be imported by other backend modules
