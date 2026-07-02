@@ -5,10 +5,10 @@ This file tracks the operational readiness of all messaging channels, integratio
 ---
 
 ## 1. Shopify Integration (Active / Dev Ready)
-*   **Customer Widget**: Live polling interface on theme duplicate, client-side 5-question limit active.
+*   **Customer Widget**: Live polling interface on theme duplicate, client-side 5-question limit active. Connected to production Railway API host, with offline status warnings removed and fallback support emails configured.
 *   **Automatic Handlers**: Keyword/RAG matching for local knowledge bases, MiniMax AI Support Brain active.
 *   **Takeover Mechanics**: Human takeover triggers, auto-escalation keywords, live polling for agent replies.
-*   **Archive & Delete Controls**: Check constraint bypass archiving, permanent cascading deletion danger zone.
+*   **Archive & Delete Controls**: Check constraint bypass archiving, permanent cascading deletion across child tables (`reply_drafts`, `staff_notes`, `agent_replies`) and logs.
 *   **Staff UX**: Needs Agent renamed, count badges, two-column filter pills grid.
 
 ---
@@ -19,6 +19,7 @@ This file tracks the operational readiness of all messaging channels, integratio
 *   **MiniMax LLM Layer**: System prompt constructs custom responses using knowledge contexts and turn history.
 *   **Rules Fallback**: Seamless local search failsafe on connection failure or missing environment keys.
 *   **Serialization Pipeline**: Encoded JSON metadata packed in `matched_source` field, zero-ddl schema compatible.
+*   **Knowledge Packs**: Seeding pack containing UKCA & CE safety certification, private land safety rules, warranty and returns policy contexts.
 
 ---
 
