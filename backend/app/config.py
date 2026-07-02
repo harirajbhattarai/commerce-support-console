@@ -26,6 +26,10 @@ class Settings:
     AMAZON_ROLE_ARN: str = os.getenv("AMAZON_ROLE_ARN", "")
     AMAZON_REGION: str = os.getenv("AMAZON_REGION", "")
     AMAZON_MARKETPLACE_ID: str = os.getenv("AMAZON_MARKETPLACE_ID", "")
+    
+    # MiniMax Configuration
+    MINIMAX_API_KEY: str = os.getenv("MINIMAX_API_KEY", "")
+    MINIMAX_MODEL: str = os.getenv("MINIMAX_MODEL", "abab6.5g-chat")
 
 
 # Instantiate settings to be imported by other backend modules

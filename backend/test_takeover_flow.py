@@ -207,11 +207,144 @@ def test_archive_and_delete():
     
     print("\nALL ARCHIVE & DELETE INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_support_brain_scenarios():
+    print("\nStarting integration test for Support Brain scenarios...")
+    
+    # Configure token
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+    
+    # Let's temporarily ensure MiniMax API Key is NOT configured to check fallback behavior
+    original_key = settings.MINIMAX_API_KEY
+    settings.MINIMAX_API_KEY = "" # Ensure fallback rules are active
+    
+    try:
+        # Case 1 (Fallback Mode): "Which hoverboard is best for a 9 year old?" -> expects fallback warning
+        session_id = f"test-brain-1-{uuid.uuid4()}"
+        res1 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Which hoverboard is best for a 9 year old?",
+            "conversation_id": session_id
+        })
+        assert res1.status_code == 200
+        data1 = res1.json()
+        print(f"Case 1 (Fallback) Bot Reply: {data1['reply']}")
+        assert "couldn't find" in data1["reply"].lower() or "escalate" in data1["reply"].lower()
+        
+        # Case 1 (MiniMax Mode): Verify happy path with configured MiniMax
+        import unittest.mock as mock
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "For a 9-year-old child, we highly recommend the Aeroglide Hoverboard as it features built-in learner modes and safety sensors."
+                }
+            }]
+        }
+        with mock.patch("requests.post", return_value=mock_response):
+            settings.MINIMAX_API_KEY = "test_key"
+            res1_minimax = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": "Which hoverboard is best for a 9 year old?",
+                "conversation_id": f"test-brain-1-minimax-{uuid.uuid4()}"
+            })
+            assert res1_minimax.status_code == 200
+            data1_minimax = res1_minimax.json()
+            print(f"Case 1 (MiniMax Active) Bot Reply: {data1_minimax['reply']}")
+            assert "aeroglide" in data1_minimax["reply"].lower()
+            
+        # Clear settings key back for subsequent fallback checks
+        settings.MINIMAX_API_KEY = ""
+        
+        # Case 2: "How long is delivery?" -> expects shipping answer
+        session_id = f"test-brain-2-{uuid.uuid4()}"
+        res2 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "How long is delivery?",
+            "conversation_id": session_id
+        })
+        assert res2.status_code == 200
+        data2 = res2.json()
+        print(f"Case 2 Bot Reply: {data2['reply']}")
+        assert "days" in data2["reply"].lower() or "delivery" in data2["reply"].lower() or "shipping" in data2["reply"].lower()
+        
+        # Case 3: "Can I return it?" -> expects return policy answer
+        session_id = f"test-brain-3-{uuid.uuid4()}"
+        res3 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Can I return it?",
+            "conversation_id": session_id
+        })
+        assert res3.status_code == 200
+        data3 = res3.json()
+        print(f"Case 3 Bot Reply: {data3['reply']}")
+        assert "return" in data3["reply"].lower() or "day" in data3["reply"].lower()
+        
+        # Case 4: "My hoverboard smells like burning" -> expects escalate, no unsafe advice
+        session_id = f"test-brain-4-{uuid.uuid4()}"
+        res4 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "My hoverboard smells like burning",
+            "conversation_id": session_id
+        })
+        assert res4.status_code == 200
+        data4 = res4.json()
+        print(f"Case 4 Bot Reply: {data4['reply']}")
+        assert "support team" in data4["reply"].lower() or "representative" in data4["reply"].lower()
+        
+        # Verify it got marked as escalated
+        conv_res = client.get("/api/conversations", headers=headers)
+        session_log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id), None)
+        assert session_log is not None
+        assert session_log.get("status") == "needs_escalation"
+        
+        # Case 5: "Where is my order?" -> expects ask for verification / escalate
+        session_id = f"test-brain-5-{uuid.uuid4()}"
+        res5 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Where is my order?",
+            "conversation_id": session_id
+        })
+        assert res5.status_code == 200
+        data5 = res5.json()
+        print(f"Case 5 Bot Reply: {data5['reply']}")
+        assert "support team" in data5["reply"].lower() or "representative" in data5["reply"].lower()
+        
+        # Case 6: "I want to speak to a person" -> expects needs agent
+        session_id = f"test-brain-6-{uuid.uuid4()}"
+        res6 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "I want to speak to a person",
+            "conversation_id": session_id
+        })
+        assert res6.status_code == 200
+        data6 = res6.json()
+        print(f"Case 6 Bot Reply: {data6['reply']}")
+        assert "support team" in data6["reply"].lower() or "representative" in data6["reply"].lower()
+        
+        # Case 7: MiniMax key missing fallback check -> already tested above because MINIMAX_API_KEY was empty!
+        # Let's verify metadata matches fallback brain mode
+        conv_res = client.get("/api/conversations", headers=headers)
+        session_log_fallback = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id), None)
+        assert session_log_fallback is not None
+        assert session_log_fallback.get("brain_mode") == "rules" or session_log_fallback.get("brain_mode") == "fallback"
+        
+    finally:
+        # Restore key
+        settings.MINIMAX_API_KEY = original_key
+        
+    print("\nALL SUPPORT BRAIN INTEGRATION SCENARIOS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
         test_auto_escalation()
         test_archive_and_delete()
+        test_support_brain_scenarios()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")

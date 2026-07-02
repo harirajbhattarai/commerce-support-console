@@ -1118,8 +1118,16 @@
       </div>
 
       <div class="details-section">
-        <div class="details-section-title">RAG Efficacy</div>
+        <div class="details-section-title">AI Support Brain Metadata</div>
         <table class="meta-table">
+          <tr>
+            <td class="label">Brain Mode</td>
+            <td id="detail-brain-mode" class="value" style="font-weight: bold; text-transform: uppercase;">—</td>
+          </tr>
+          <tr>
+            <td class="label">Detected Intent</td>
+            <td id="detail-intent" class="value" style="font-family: monospace; font-size: 11px; text-transform: uppercase;">—</td>
+          </tr>
           <tr>
             <td class="label">Source Matched</td>
             <td id="detail-matched-source" class="value">—</td>
@@ -1127,6 +1135,10 @@
           <tr>
             <td class="label">Confidence</td>
             <td id="detail-confidence" class="value">—</td>
+          </tr>
+          <tr id="row-escalation-reason" style="display: none;">
+            <td class="label" style="color: var(--accent-red);">Escalation Reason</td>
+            <td id="detail-escalation-reason" class="value" style="color: var(--accent-red); font-weight: 500;">—</td>
           </tr>
         </table>
       </div>
@@ -1296,6 +1308,10 @@
       const detailCreatedAt = document.getElementById("detail-created-at");
       const detailMatchedSource = document.getElementById("detail-matched-source");
       const detailConfidence = document.getElementById("detail-confidence");
+      const detailBrainMode = document.getElementById("detail-brain-mode");
+      const detailIntent = document.getElementById("detail-intent");
+      const detailEscalationReason = document.getElementById("detail-escalation-reason");
+      const rowEscalationReason = document.getElementById("row-escalation-reason");
 
       // Actions UI
       const actionsSection = document.getElementById("actions-section");
@@ -1410,6 +1426,9 @@
               content: log.assistant_message,
               matched_source: log.matched_source,
               confidence: log.confidence,
+              brain_mode: log.brain_mode || "rules",
+              intent: log.intent || "unknown",
+              escalation_reason: log.escalation_reason || "",
               escalated: log.escalated,
               status: log.status,
               created_at: log.created_at
@@ -1809,9 +1828,23 @@
           const latestBot = botMessages[botMessages.length - 1];
           detailMatchedSource.textContent = latestBot.matched_source || "None (Fallback)";
           detailConfidence.textContent = Math.round((latestBot.confidence || 0) * 100) + "%";
+          detailBrainMode.textContent = latestBot.brain_mode || "rules";
+          detailIntent.textContent = latestBot.intent || "unknown";
+          
+          if (latestBot.escalation_reason) {
+            rowEscalationReason.style.display = "table-row";
+            detailEscalationReason.textContent = latestBot.escalation_reason;
+          } else {
+            rowEscalationReason.style.display = "none";
+            detailEscalationReason.textContent = "—";
+          }
         } else {
           detailMatchedSource.textContent = "—";
           detailConfidence.textContent = "—";
+          detailBrainMode.textContent = "—";
+          detailIntent.textContent = "—";
+          rowEscalationReason.style.display = "none";
+          detailEscalationReason.textContent = "—";
         }
 
         // Show notes section and fetch notes
@@ -1924,6 +1957,10 @@
         detailCreatedAt.textContent = "—";
         detailMatchedSource.textContent = "—";
         detailConfidence.textContent = "—";
+        detailBrainMode.textContent = "—";
+        detailIntent.textContent = "—";
+        rowEscalationReason.style.display = "none";
+        detailEscalationReason.textContent = "—";
         if (actionsSection) actionsSection.style.display = "none";
         if (notesSection) notesSection.style.display = "none";
         if (notesList) notesList.innerHTML = "";
@@ -2100,6 +2137,10 @@
             detailCreatedAt.textContent = "—";
             detailMatchedSource.textContent = "—";
             detailConfidence.textContent = "—";
+            detailBrainMode.textContent = "—";
+            detailIntent.textContent = "—";
+            rowEscalationReason.style.display = "none";
+            detailEscalationReason.textContent = "—";
             
             // Hide panels
             actionsSection.style.display = "none";

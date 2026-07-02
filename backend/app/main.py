@@ -150,6 +150,14 @@ def health_check():
     }
 
 
+@app.get("/api/brain/health")
+async def brain_health():
+    api_key_set = bool(settings.MINIMAX_API_KEY and "placeholder" not in settings.MINIMAX_API_KEY and settings.MINIMAX_API_KEY != "")
+    return {
+        "minimax_configured": api_key_set,
+        "fallback_available": True,
+        "model_configured": settings.MINIMAX_MODEL
+    }
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     store_id = request.store_id
@@ -186,94 +194,127 @@ async def chat_endpoint(request: ChatRequest):
         except Exception as err:
             print(f"Error checking session escalation status: {err}")
 
+    # Default variables
+    brain_mode = "rules"
+    intent = "unknown"
+    confidence = 0.0
+    escalation_reason = ""
+    source_used = matched_title
+    
     if is_escalated:
         reply = "Our support team has been notified and a representative will reply here shortly."
-        matched_title = "Staff Takeover Active (Waiting for support representative)"
+        source_used = "Staff Takeover Active (Waiting for support representative)"
     else:
-        # Check if customer explicitly asks for human support team
-        human_intents = [
-            "speak to a person",
-            "human please",
-            "speak to someone",
-            "agent please",
-            "real person",
-            "customer service",
-            "support team"
-        ]
-        asks_for_human = any(intent in message_text for intent in human_intents)
-        
-        if asks_for_human:
-            reply = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
-            matched_title = "Human Support Intent Requested"
-            is_escalated = True
-        else:
-            # 2. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow)
-            # Split the message into words for keyword checking
-            message_words = [word.strip("?,.!") for word in message_text.split()]
-            
-            for article in store_articles:
-                keywords = article.get("keywords", [])
-                # Check if any keyword matches any word in the user's query
-                for keyword in keywords:
-                    if keyword in message_words or keyword in message_text:
-                        matched_content = article["content"]
-                        matched_title = article["title"]
-                        break
-                if matched_content:
+        # Check standard chat flow using Support Brain
+        # 1. Simple Keyword Match in Local JSON (Simulating Vector/RAG flow) to find retrieved knowledge
+        message_words = [word.strip("?,.!") for word in message_text.split()]
+        for article in store_articles:
+            keywords = article.get("keywords", [])
+            for keyword in keywords:
+                if keyword in message_words or keyword in message_text:
+                    matched_content = article["content"]
+                    matched_title = article["title"]
                     break
-
-            # 3. Formulate Response
             if matched_content:
-                reply = matched_content
-            else:
-                # Custom default fallback greetings/messages per store
-                store_names = {
-                    "hoverboard_store": "Hoverboard Store UK",
-                    "hcs_gadgets": "HCS Gadgets Support",
-                    "aroma_haven": "Aroma Haven Botanicals"
-                }
-                store_name = store_names.get(store_id, "our store")
+                break
                 
-                reply = (
-                    f"Thank you for contacting {store_name}. I couldn't find a direct match "
-                    f"regarding that in our knowledge base. Would you like me to escalate "
-                    f"your request to a human support agent?"
-                )
+        # Fallback message
+        store_names = {
+            "hoverboard_store": "Hoverboard Store UK",
+            "hcs_gadgets": "HCS Gadgets Support",
+            "aroma_haven": "Aroma Haven Botanicals"
+        }
+        store_name = store_names.get(store_id, "our store")
+        rules_fallback_reply = (
+            f"Thank you for contacting {store_name}. I couldn't find a direct match "
+            f"regarding that in our knowledge base. Would you like me to escalate "
+            f"your request to a human support agent?"
+        )
+        
+        # 2. Fetch history
+        previous_context = []
+        if supabase_client:
+            try:
+                logs_res = supabase_client.table("chat_logs")\
+                    .select("user_message, assistant_message")\
+                    .eq("session_id", conversation_id)\
+                    .order("created_at", desc=True)\
+                    .limit(3)\
+                    .execute()
+                if logs_res.data:
+                    for log in reversed(logs_res.data):
+                        previous_context.append({"sender": "user", "content": log.get("user_message", "")})
+                        previous_context.append({"sender": "bot", "content": log.get("assistant_message", "")})
+            except Exception as e:
+                print(f"Error fetching historical context for brain: {e}")
+                
+        # 3. Call Support Brain
+        from app.services.support_brain import generate_support_reply
+        brain_result = generate_support_reply(
+            store_id=store_id,
+            session_id=conversation_id,
+            user_message=request.message,
+            previous_context=previous_context,
+            retrieved_knowledge=matched_content,
+            rules_fallback_reply=rules_fallback_reply,
+            matched_title=matched_title
+        )
+        
+        reply = brain_result["reply_text"]
+        is_escalated = brain_result["should_escalate"]
+        intent = brain_result["intent"]
+        confidence = brain_result["confidence"]
+        escalation_reason = brain_result["escalation_reason"]
+        brain_mode = brain_result["brain_mode"]
+        source_used = brain_result["source_used"]
 
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
         try:
             if is_escalated:
                 escalated = True
-                confidence = 0.0
                 status = db_status if db_status == "in_progress" else "needs_escalation"
             else:
-                # Escalated if fallback triggered (no article matched)
-                escalated = matched_title is None
-                confidence = 1.0 if matched_title else 0.0
-                status = "needs_escalation" if escalated else "new"
+                escalated = False
+                status = "new"
+                
+            # Serialize metadata into matched_source to bypass schema limitations safely
+            import json
+            safe_source = (source_used[:80] + "...") if source_used and len(source_used) > 80 else source_used
+            safe_reason = (escalation_reason[:80] + "...") if escalation_reason and len(escalation_reason) > 80 else escalation_reason
+            
+            meta_payload = {
+                "brain_mode": brain_mode,
+                "intent": intent,
+                "source": safe_source,
+                "confidence": confidence,
+                "escalation_reason": safe_reason
+            }
+            matched_source_str = json.dumps(meta_payload)
+            if len(matched_source_str) > 255:
+                meta_payload["source"] = safe_source[:40] if safe_source else None
+                meta_payload["escalation_reason"] = safe_reason[:40] if safe_reason else None
+                matched_source_str = json.dumps(meta_payload)
             
             log_entry = {
                 "store_id": store_id,
                 "session_id": conversation_id,
                 "user_message": request.message,
                 "assistant_message": reply,
-                "matched_source": matched_title,
+                "matched_source": matched_source_str,
                 "confidence": confidence,
                 "escalated": escalated,
                 "status": status
             }
-            # Attempt sync insert
             supabase_client.table("chat_logs").insert(log_entry).execute()
         except Exception as db_err:
-            # Gracefully log DB save error so chat response still returns
             print(f"ERROR: Failed to save conversation log to Supabase: {db_err}")
 
     return ChatResponse(
         reply=reply,
         conversation_id=conversation_id,
         store_id=store_id,
-        matched_article=matched_title
+        matched_article=source_used
     )
 
 @app.get("/api/conversations", dependencies=[Depends(verify_admin_token)])
@@ -293,6 +334,24 @@ async def get_conversations(store_id: Optional[str] = None):
         for log in logs:
             if log.get("matched_source") == "__archived__":
                 log["status"] = "archived"
+                
+            raw_source = log.get("matched_source")
+            log["brain_mode"] = "rules"
+            log["intent"] = "unknown"
+            log["escalation_reason"] = ""
+            
+            if raw_source:
+                try:
+                    import json
+                    meta = json.loads(raw_source)
+                    if isinstance(meta, dict) and "brain_mode" in meta:
+                        log["brain_mode"] = meta.get("brain_mode", "rules")
+                        log["intent"] = meta.get("intent", "unknown")
+                        log["matched_source"] = meta.get("source")
+                        log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
+                        log["escalation_reason"] = meta.get("escalation_reason", "")
+                except json.JSONDecodeError:
+                    pass
 
         # Fetch all agent replies
         replies_res = supabase_client.table("agent_replies").select("*").order("created_at", desc=True).execute()

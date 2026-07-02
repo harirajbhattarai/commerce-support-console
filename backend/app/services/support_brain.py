@@ -1,0 +1,270 @@
+import os
+import requests
+from typing import List, Dict, Optional
+from app.config import settings
+
+def detect_intent_and_risk(message_text: str):
+    """
+    Classifies user message into predefined intents and assigns risk levels.
+    Enforces rule-based checks for safety, complaints, and live human transfers.
+    """
+    msg = message_text.lower().strip()
+    
+    # 1. Safety hazard keywords
+    safety_danger_keywords = ["smoke", "fire", "spark", "burning", "melt", "explode", "swell", "overheat", "hot", "burning smell"]
+    has_safety_danger = any(kw in msg for kw in safety_danger_keywords)
+    
+    # 2. Legal threat keywords
+    legal_keywords = ["sue", "legal", "lawyer", "court", "ombudsman", "trading standards", "solicitor", "action"]
+    has_legal_threat = any(kw in msg for kw in legal_keywords)
+    
+    # 3. Payment/billing keywords
+    payment_keywords = ["chargeback", "stripe", "paypal", "double charge", "billing", "card declined", "payment failed", "checkout error"]
+    has_payment_issue = any(kw in msg for kw in payment_keywords)
+    
+    # 4. Human transfer intent
+    human_keywords = ["speak to a person", "human please", "speak to someone", "agent please", "real person", "customer service", "support team", "live agent", "talk to human", "representative"]
+    is_human_request = any(kw in msg for kw in human_keywords)
+    
+    intent = "unknown"
+    risk_level = "low"
+    escalate = False
+    escalation_reason = ""
+    
+    if is_human_request:
+        intent = "speak_to_human"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Customer requested live agent support"
+    elif has_safety_danger:
+        intent = "battery_safety"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Safety hazard keywords detected (heat/fire/smoke/sparks)"
+    elif has_legal_threat:
+        intent = "complaint"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Potential legal threat / dispute detected"
+    elif has_payment_issue:
+        intent = "unknown"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Payment/billing processing issue detected"
+    # Damaged item claim
+    elif any(kw in msg for kw in ["damaged", "broken", "faulty", "smashed", "cracked", "scratched", "dent", "dead on arrival", "defect"]):
+        intent = "damaged_item"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Damaged or defective product claim reported"
+    # Refund question/dispute
+    elif any(kw in msg for kw in ["refund", "money back", "charge back", "refund my"]):
+        intent = "refund_question"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Refund claim or refund status request"
+    # Order-specific tracking
+    elif any(kw in msg for kw in ["where is my order", "track", "tracking", "order status", "delivery status", "haven't received", "parcel status", "when will it arrive"]):
+        intent = "order_tracking"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Order-specific tracking lookup requested"
+    # Angry complaint
+    elif any(kw in msg for kw in ["angry", "upset", "complaint", "complain", "scam", "rip off", "waste of money", "useless", "terrible", "worst"]):
+        intent = "complaint"
+        risk_level = "high"
+        escalate = True
+        escalation_reason = "Customer complaint or negative sentiment detected"
+        
+    # If not already classified as high-risk, determine standard intent
+    if intent == "unknown":
+        if any(kw in msg for kw in ["delivery", "shipping", "shipment", "dispatch", "how long is delivery", "how long to ship", "postage"]):
+            intent = "shipping_times"
+        elif any(kw in msg for kw in ["return", "returns", "exchange", "refund policy", "return policy"]):
+            intent = "return_policy"
+        elif any(kw in msg for kw in ["battery", "charge", "charger", "overcharge"]):
+            if "safety" in msg or "safe" in msg:
+                intent = "battery_safety"
+            else:
+                intent = "charging_problem"
+        elif any(kw in msg for kw in ["reset", "calibrate", "calibration", "beeping", "flash", "flashing", "red light"]):
+            intent = "reset_help"
+        elif any(kw in msg for kw in ["recommendation", "recommend", "best", "which", "buy", "suggest"]):
+            intent = "product_recommendation"
+        elif any(kw in msg for kw in ["year old", "age", "suitable", "kids", "children", "years old"]):
+            intent = "age_suitability"
+        elif any(kw in msg for kw in ["discount", "coupon", "code", "promo", "voucher", "deal", "signup"]):
+            intent = "discount_question"
+        elif any(kw in msg for kw in ["warranty", "guarantee"]):
+            intent = "warranty_question"
+            
+    # Safety Router Intent Rules
+    auto_answer_allowed_intents = {
+        "shipping_times",
+        "return_policy",
+        "battery_safety",
+        "charging_problem",
+        "reset_help",
+        "product_recommendation",
+        "age_suitability",
+        "discount_question",
+        "warranty_question"
+    }
+    
+    if intent in auto_answer_allowed_intents and risk_level == "low":
+        escalate = False
+    else:
+        escalate = True
+        if not escalation_reason:
+            escalation_reason = f"Intent '{intent}' with risk level '{risk_level}' requires human escalation"
+            
+    return intent, risk_level, escalate, escalation_reason
+
+def construct_system_prompt(store_id: str, retrieved_knowledge: str) -> str:
+    """
+    Creates the system instructions for the LLM.
+    """
+    store_names = {
+        "hoverboard_store": "Hoverboard Store UK",
+        "hcs_gadgets": "HCS Gadgets",
+        "aroma_haven": "Aroma Haven Botanicals"
+    }
+    store_name = store_names.get(store_id, "our store")
+    
+    return f"""You are the friendly customer support assistant for {store_name}.
+Your job is to answer customer questions accurately and safely using ONLY the provided Knowledge Base context below.
+
+=== STRICT GUIDELINES ===
+1. Only answer based on the official Knowledge Base context provided. If you do not know the answer or if the context does not cover it, tell the customer you are transferring them to a support team member.
+2. DO NOT invent, hallucinate, or assume any customer order details, tracking numbers, shipping dates, or postcodes.
+3. DO NOT promise, guarantee, or authorize refunds, replacements, or discount codes unless they are explicitly written in the context.
+4. DO NOT make any legal assertions or medical claims.
+5. If the customer reports any safety hazards, battery swelling, overheating, sparks, smoke, fire, or burning smells, instruct them to stop using and unplug the device immediately, place it in a safe outdoor location, and escalate to a human agent. Do not attempt any other troubleshooting.
+6. Keep your answers brief, friendly, helpful, and under 3-4 sentences where possible.
+
+=== KNOWLEDGE BASE CONTEXT ===
+{retrieved_knowledge}
+"""
+
+def generate_support_reply(
+    store_id: str,
+    session_id: str,
+    user_message: str,
+    previous_context: Optional[List[Dict[str, str]]] = None,
+    retrieved_knowledge: Optional[str] = None,
+    rules_fallback_reply: str = "",
+    matched_title: Optional[str] = None
+) -> Dict[str, any]:
+    """
+    Orchestrates intent detection, safety routing, and response generation (MiniMax or Fallback).
+    """
+    # 1. Detect Intent and Safety check
+    intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(user_message)
+    
+    # 2. If safety router triggers forced escalation, return holding reply immediately
+    if should_escalate:
+        if intent == "speak_to_human":
+            reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
+        elif intent == "battery_safety":
+            reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
+        else:
+            reply_text = "Our support team has been notified and a representative will reply here shortly."
+            
+        return {
+            "reply_text": reply_text,
+            "intent": intent,
+            "confidence": 0.0,
+            "source_used": matched_title or "Safety Router Escalation",
+            "should_escalate": True,
+            "escalation_reason": escalation_reason,
+            "brain_mode": "rules"
+        }
+        
+    # 3. Check if MiniMax is configured
+    api_key = settings.MINIMAX_API_KEY
+    model_name = settings.MINIMAX_MODEL
+    
+    if not api_key:
+        # Fallback to rules if API key missing
+        reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+        return {
+            "reply_text": reply_text,
+            "intent": intent,
+            "confidence": 1.0 if matched_title else 0.0,
+            "source_used": matched_title or "Rules Fallback (No Match)",
+            "should_escalate": matched_title is None, # Escalate if no matching article in rules mode
+            "escalation_reason": "No matching knowledge article" if matched_title is None else "",
+            "brain_mode": "fallback"
+        }
+        
+    # 4. MiniMax LLM Query execution
+    try:
+        url = "https://api.minimax.chat/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        system_prompt = construct_system_prompt(store_id, retrieved_knowledge or "No knowledge articles found.")
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Include history context if present
+        if previous_context:
+            for ctx in previous_context:
+                role = "assistant" if ctx.get("sender") in ["bot", "agent"] else "user"
+                messages.append({"role": role, "content": ctx.get("content", "")})
+                
+        messages.append({"role": "user", "content": user_message})
+        
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "stream": False
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=8.0)
+        
+        if response.status_code == 200:
+            result = response.json()
+            reply_text = result["choices"][0]["message"]["content"].strip()
+            
+            # Perform a basic validation that LLM did not bypass safety instructions
+            safety_lower = reply_text.lower()
+            if any(kw in safety_lower for kw in ["smoke", "fire", "spark", "burning"]):
+                # Forced transfer if safety words are inside the bot output
+                return {
+                    "reply_text": "Thanks — I’ve passed this to our support team. A team member will reply here shortly.",
+                    "intent": intent,
+                    "confidence": 0.0,
+                    "source_used": "LLM Output Safety Audit Safeguard",
+                    "should_escalate": True,
+                    "escalation_reason": "LLM output safety audit failed",
+                    "brain_mode": "minimax"
+                }
+                
+            return {
+                "reply_text": reply_text,
+                "intent": intent,
+                "confidence": 0.9,
+                "source_used": matched_title or "MiniMax Knowledge Search",
+                "should_escalate": False,
+                "escalation_reason": "",
+                "brain_mode": "minimax"
+            }
+        else:
+            print(f"MiniMax API returned error {response.status_code}: {response.text}")
+            raise Exception("Non-200 API response")
+            
+    except Exception as e:
+        print(f"Error invoking MiniMax API support brain: {e}")
+        # Graceful fallback to rules-based logic on LLM failure
+        reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+        return {
+            "reply_text": reply_text,
+            "intent": intent,
+            "confidence": 1.0 if matched_title else 0.0,
+            "source_used": matched_title or "Rules Fallback (No Match)",
+            "should_escalate": matched_title is None,
+            "escalation_reason": "MiniMax API connection failure",
+            "brain_mode": "fallback"
+        }
