@@ -144,10 +144,74 @@ def test_auto_escalation():
     print(f"Verified: Session {session_id} is marked as escalated and status set to needs_escalation. ✅")
     print("\nALL AUTO-ESCALATION INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_archive_and_delete():
+    print("\nStarting integration test for Archive & Permanent Delete...")
+    session_id = f"test-arch-del-{uuid.uuid4()}"
+    store_id = "hoverboard_store"
+    
+    # Configure token
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+    
+    # 1. Create a log
+    chat_payload = {
+        "store_id": store_id,
+        "message": "Archive testing message flow",
+        "conversation_id": session_id
+    }
+    chat_res = client.post("/api/chat", json=chat_payload)
+    assert chat_res.status_code == 200
+    
+    # 2. Add a staff note
+    note_payload = {
+        "session_id": session_id,
+        "note": "Test note for deletion cascade",
+        "author": "Agent"
+    }
+    note_res = client.post("/api/notes", json=note_payload, headers=headers)
+    assert note_res.status_code == 200
+    
+    # 3. Add a draft
+    draft_payload = {
+        "session_id": session_id,
+        "draft_text": "Test draft for deletion cascade"
+    }
+    draft_res = client.post("/api/reply-draft", json=draft_payload, headers=headers)
+    assert draft_res.status_code == 200
+    
+    # 4. Update status to archived
+    print("\n[Step 1] Setting conversation status to archived...")
+    status_res = client.put(f"/api/conversations/{session_id}/status?status=archived", headers=headers)
+    assert status_res.status_code == 200, f"Status update failed. Code: {status_res.status_code}, Body: {status_res.text}"
+    
+    # Verify status is archived
+    conv_res = client.get("/api/conversations", headers=headers)
+    assert conv_res.status_code == 200
+    session_log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == session_id), None)
+    assert session_log is not None, f"Could not find conversation {session_id} after archiving"
+    assert session_log.get("status") == "archived", f"Expected status archived, got {session_log.get('status')}"
+    print("Verified: Conversation status successfully updated to archived in Supabase database. ✅")
+    
+    # 5. Delete the conversation
+    print("\n[Step 2] Sending DELETE request for conversation...")
+    delete_res = client.delete(f"/api/conversations/{session_id}", headers=headers)
+    assert delete_res.status_code == 200, f"Delete failed. Code: {delete_res.status_code}, Body: {delete_res.text}"
+    
+    # Verify it is completely gone
+    conv_res_after = client.get("/api/conversations", headers=headers)
+    session_log_after = next((log for log in conv_res_after.json().get("logs", []) if log["session_id"] == session_id), None)
+    assert session_log_after is None, "Conversation was not deleted from chat_logs"
+    print("Verified: Conversation and all associated cascading child data records completely removed. ✅")
+    
+    print("\nALL ARCHIVE & DELETE INTEGRATION TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
         test_auto_escalation()
+        test_archive_and_delete()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")

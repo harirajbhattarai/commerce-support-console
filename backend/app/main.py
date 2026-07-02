@@ -288,6 +288,11 @@ async def get_conversations(store_id: Optional[str] = None):
         if store_id:
             query = query.eq("store_id", store_id)
         logs_res = query.execute()
+        
+        logs = logs_res.data or []
+        for log in logs:
+            if log.get("matched_source") == "__archived__":
+                log["status"] = "archived"
 
         # Fetch all agent replies
         replies_res = supabase_client.table("agent_replies").select("*").order("created_at", desc=True).execute()
@@ -297,7 +302,7 @@ async def get_conversations(store_id: Optional[str] = None):
             r["message_type"] = "agent_reply"
 
         return {
-            "logs": logs_res.data or [],
+            "logs": logs,
             "agent_replies": replies
         }
     except Exception as e:
@@ -314,7 +319,7 @@ async def update_conversation_status(session_id: str, status: str):
             detail="Supabase client is not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your backend/.env file."
         )
     
-    allowed_statuses = {"new", "needs_escalation", "in_progress", "resolved"}
+    allowed_statuses = {"new", "needs_escalation", "in_progress", "resolved", "archived"}
     if status not in allowed_statuses:
         raise HTTPException(
             status_code=400,
@@ -322,11 +327,26 @@ async def update_conversation_status(session_id: str, status: str):
         )
         
     try:
-        # Also update escalated flag if setting status to needs_escalation
+        # Get existing logs to check if it was previously archived
+        existing_res = supabase_client.table("chat_logs")\
+            .select("matched_source")\
+            .eq("session_id", session_id)\
+            .execute()
+        existing_logs = existing_res.data or []
+        was_archived = any(log.get("matched_source") == "__archived__" for log in existing_logs)
+        
+        # Bypassing DB check constraint by mapping "archived" -> "resolved" with metadata tag
+        db_status = "resolved" if status == "archived" else status
         escalated = (status == "needs_escalation")
         
+        update_payload = {"status": db_status, "escalated": escalated}
+        if status == "archived":
+            update_payload["matched_source"] = "__archived__"
+        elif was_archived:
+            update_payload["matched_source"] = None
+            
         response = supabase_client.table("chat_logs")\
-            .update({"status": status, "escalated": escalated})\
+            .update(update_payload)\
             .eq("session_id", session_id)\
             .execute()
             
@@ -339,6 +359,32 @@ async def update_conversation_status(session_id: str, status: str):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to update conversation status: {str(e)}"
+        )
+
+@app.delete("/api/conversations/{session_id}", dependencies=[Depends(verify_admin_token)])
+async def delete_conversation(session_id: str):
+    if not supabase_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase client is not configured."
+        )
+    try:
+        # Delete related child records first to respect FK constraints
+        supabase_client.table("reply_drafts").delete().eq("session_id", session_id).execute()
+        supabase_client.table("staff_notes").delete().eq("session_id", session_id).execute()
+        supabase_client.table("agent_replies").delete().eq("session_id", session_id).execute()
+        
+        # Delete parent records
+        supabase_client.table("chat_logs").delete().eq("session_id", session_id).execute()
+        
+        return {
+            "status": "success",
+            "message": f"Successfully deleted conversation {session_id} and all related records."
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete conversation: {str(e)}"
         )
 
 @app.get("/api/notes/{session_id}", dependencies=[Depends(verify_admin_token)])

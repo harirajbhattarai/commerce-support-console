@@ -580,31 +580,45 @@
       padding: 0 5px;
     }
 
-    .status-tab {
-      flex: 1;
-      border: none;
-      background: none;
-      padding: 10px 5px;
-      font-size: 10px;
-      font-weight: 700;
+    .status-tab-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--amzn-text-muted);
+      background-color: #f0f2f5;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
       cursor: pointer;
-      text-align: center;
-      border-bottom: 3px solid transparent;
       outline: none;
       transition: all 0.15s ease;
+      text-align: left;
     }
-
-    .status-tab:hover:not([disabled]) {
+    .status-tab-pill:hover:not([disabled]) {
+      background-color: #e5e7eb;
       color: var(--amzn-text);
+      border-color: #9ca3af;
     }
-
-    .status-tab.active {
-      color: var(--accent-blue);
-      border-bottom-color: var(--accent-blue);
+    .status-tab-pill.active {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      border-color: #7dd3fc;
     }
-
-    .status-tab[disabled] {
+    .pill-count {
+      background-color: rgba(0, 0, 0, 0.06);
+      color: inherit;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+    .status-tab-pill.active .pill-count {
+      background-color: #bae6fd;
+    }
+    .status-tab-pill[disabled] {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -862,7 +876,7 @@
       <span id="metric-auto-replied" class="metric-value">0</span>
     </div>
     <div class="metric-card">
-      <span class="metric-label">NEEDS ESCALATION</span>
+      <span class="metric-label">NEEDS AGENT</span>
       <span id="metric-escalated" class="metric-value escalated">0</span>
     </div>
     <div class="metric-card">
@@ -915,12 +929,27 @@
         <span>Active Customer Chats</span>
         <span id="thread-count" style="font-size: 12px; color: var(--amzn-text-muted); font-weight: normal;">0 threads</span>
       </div>
-      <div class="status-tabs" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px;">
-        <button class="status-tab active" data-status="all">All</button>
-        <button class="status-tab" data-status="needs-escalation">Needs Human</button>
-        <button class="status-tab" data-status="in-progress">In Progress</button>
-        <button class="status-tab" data-status="resolved">Resolved</button>
-        <button class="status-tab" data-status="auto-replied">Auto-Replied</button>
+      <div class="status-tabs-container" style="padding: 10px 12px; background-color: #f7f9fa; border-bottom: 1px solid var(--amzn-border);">
+        <div class="status-tabs-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+          <button class="status-tab-pill active" data-status="all">
+            All <span id="count-all" class="pill-count">0</span>
+          </button>
+          <button class="status-tab-pill" data-status="needs-escalation">
+            Needs Agent <span id="count-needs-escalation" class="pill-count">0</span>
+          </button>
+          <button class="status-tab-pill" data-status="in-progress">
+            In Progress <span id="count-in-progress" class="pill-count">0</span>
+          </button>
+          <button class="status-tab-pill" data-status="resolved">
+            Resolved <span id="count-resolved" class="pill-count">0</span>
+          </button>
+          <button class="status-tab-pill" data-status="auto-replied">
+            Auto-Replied <span id="count-auto-replied" class="pill-count">0</span>
+          </button>
+          <button class="status-tab-pill" data-status="archived">
+            Archived <span id="count-archived" class="pill-count">0</span>
+          </button>
+        </div>
       </div>
       <div id="thread-list-container" class="thread-list">
         <!-- JS populated thread entries -->
@@ -1051,8 +1080,27 @@
             Mark Resolved
           </button>
           <button id="btn-mark-escalated" class="btn-action" style="color: var(--accent-red);">
-            Mark Needs Escalation
+            Mark Needs Agent
           </button>
+          <button id="btn-mark-archived" class="btn-action" style="color: var(--amzn-text-muted);">
+            Archive Conversation
+          </button>
+          
+          <!-- Danger Area -->
+          <details style="margin-top: 8px; border: 1px solid #f5c6cb; border-radius: 4px; padding: 8px; background-color: #fdf2f2;">
+            <summary style="font-size: 11px; font-weight: 700; color: #a8201a; cursor: pointer; outline: none;">
+              Danger Zone (Admin Only)
+            </summary>
+            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 10px; color: #721c24;">
+                Type <strong>DELETE</strong> below to permanently erase this conversation from all logs.
+              </div>
+              <input type="text" id="delete-confirm-input" placeholder="Type DELETE" style="width: 100%; padding: 4px 6px; border: 1px solid #f5c6cb; border-radius: 3px; font-size: 11px; outline: none; background: white;" />
+              <button id="btn-permanent-delete" class="btn-action" style="background: #ef4444; color: white; border-color: #dc2626; font-weight: bold; width: 100%; display: flex; justify-content: center; padding: 4px 8px;">
+                Permanently Delete
+              </button>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -1254,6 +1302,9 @@
       const btnMarkInProgress = document.getElementById("btn-mark-in-progress");
       const btnMarkResolved = document.getElementById("btn-mark-resolved");
       const btnMarkEscalated = document.getElementById("btn-mark-escalated");
+      const btnMarkArchived = document.getElementById("btn-mark-archived");
+      const btnPermanentDelete = document.getElementById("btn-permanent-delete");
+      const deleteConfirmInput = document.getElementById("delete-confirm-input");
 
       // Notes UI
       const notesSection = document.getElementById("notes-section");
@@ -1282,11 +1333,13 @@
       // Status Badge Helper
       function getStatusBadgeHTML(status) {
         if (status === "needs_escalation") {
-          return `<span class="badge badge-escalated">NEEDS ESCALATION</span>`;
+          return `<span class="badge badge-escalated">NEEDS AGENT</span>`;
         } else if (status === "in_progress") {
           return `<span class="badge badge-normal" style="background-color: #fcf4e8; color: #c45500; border-color: #f5d7ad;">IN PROGRESS</span>`;
         } else if (status === "resolved") {
           return `<span class="badge badge-resolved">RESOLVED</span>`;
+        } else if (status === "archived") {
+          return `<span class="badge badge-normal" style="background-color: #e2e3e5; color: #383d41; border-color: #d6d8db;">ARCHIVED</span>`;
         } else {
           return `<span class="badge badge-normal">AUTO-REPLIED</span>`;
         }
@@ -1475,10 +1528,20 @@
         
         let filteredSessions = Object.values(sessions).filter(session => {
           // Status filter
-          if (activeStatusFilter === "needs-escalation" && session.status !== "needs_escalation") return false;
-          if (activeStatusFilter === "in-progress" && session.status !== "in_progress") return false;
-          if (activeStatusFilter === "auto-replied" && session.status !== "new") return false;
-          if (activeStatusFilter === "resolved" && session.status !== "resolved") return false;
+          if (activeStatusFilter === "all") {
+            // Exclude archived by default in "All" view
+            if (session.status === "archived") return false;
+          } else if (activeStatusFilter === "needs-escalation") {
+            if (session.status !== "needs_escalation") return false;
+          } else if (activeStatusFilter === "in-progress") {
+            if (session.status !== "in_progress") return false;
+          } else if (activeStatusFilter === "resolved") {
+            if (session.status !== "resolved") return false;
+          } else if (activeStatusFilter === "auto-replied") {
+            if (session.status !== "new") return false;
+          } else if (activeStatusFilter === "archived") {
+            if (session.status !== "archived") return false;
+          }
 
           // Channel filter
           if (activeChannelFilter !== "all") {
@@ -1505,19 +1568,65 @@
         // Sort sessions by created_at desc (newest chat activity first)
         filteredSessions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        // Update metrics
-        const totalCount = Object.keys(sessions).length;
-        const escalatedCount = Object.values(sessions).filter(s => s.status === "needs_escalation").length;
-        const autoRepliedCount = Object.values(sessions).filter(s => s.status === "new").length;
-        const resolvedCount = Object.values(sessions).filter(s => s.status === "resolved").length;
-        
-        metricTotal.textContent = totalCount;
-        metricEscalated.textContent = escalatedCount;
+        // Calculate counts based on channel/store filters
+        let countAll = 0;
+        let countNeedsAgent = 0;
+        let countInProgress = 0;
+        let countResolved = 0;
+        let countAutoReplied = 0;
+        let countArchived = 0;
+
+        Object.values(sessions).forEach(session => {
+          // Channel filter check
+          if (activeChannelFilter !== "all") {
+            if (activeChannelFilter === "shopify" && session.channel !== "shopify_widget") return;
+            if (activeChannelFilter === "amazon" && session.channel !== "amazon") return;
+          }
+          // Store filter check
+          if (activeStoreFilter !== "all") {
+            if (session.channel === "shopify_widget") {
+              if (session.store_id !== activeStoreFilter) return;
+            } else if (session.channel === "amazon") {
+              if (activeStoreFilter !== "gift_gadgets") return;
+            }
+          }
+
+          // Increment count based on status
+          if (session.status !== "archived") {
+            countAll++;
+          } else {
+            countArchived++;
+          }
+
+          if (session.status === "needs_escalation") countNeedsAgent++;
+          else if (session.status === "in_progress") countInProgress++;
+          else if (session.status === "resolved") countResolved++;
+          else if (session.status === "new") countAutoReplied++;
+        });
+
+        // Update DOM count elements for tabs
+        const elAll = document.getElementById("count-all");
+        const elNeeds = document.getElementById("count-needs-escalation");
+        const elProgress = document.getElementById("count-in-progress");
+        const elResolved = document.getElementById("count-resolved");
+        const elAuto = document.getElementById("count-auto-replied");
+        const elArchived = document.getElementById("count-archived");
+
+        if (elAll) elAll.textContent = countAll;
+        if (elNeeds) elNeeds.textContent = countNeedsAgent;
+        if (elProgress) elProgress.textContent = countInProgress;
+        if (elResolved) elResolved.textContent = countResolved;
+        if (elAuto) elAuto.textContent = countAutoReplied;
+        if (elArchived) elArchived.textContent = countArchived;
+
+        // Update top metrics bar
+        metricTotal.textContent = countAll;
+        metricEscalated.textContent = countNeedsAgent;
         if (document.getElementById("metric-auto-replied")) {
-          document.getElementById("metric-auto-replied").textContent = autoRepliedCount;
+          document.getElementById("metric-auto-replied").textContent = countAutoReplied;
         }
         if (document.getElementById("metric-resolved")) {
-          document.getElementById("metric-resolved").textContent = resolvedCount;
+          document.getElementById("metric-resolved").textContent = countResolved;
         }
         threadCountText.textContent = `${filteredSessions.length} threads`;
 
@@ -1951,6 +2060,64 @@
           if (activeSessionId) updateSessionStatus(activeSessionId, "needs_escalation");
         });
       }
+      if (btnMarkArchived) {
+        btnMarkArchived.addEventListener("click", () => {
+          if (activeSessionId) updateSessionStatus(activeSessionId, "archived");
+        });
+      }
+      if (btnPermanentDelete) {
+        btnPermanentDelete.addEventListener("click", async () => {
+          if (!activeSessionId) return;
+          const confirmText = deleteConfirmInput.value.trim();
+          if (confirmText !== "DELETE") {
+            alert("Please type 'DELETE' exactly to confirm deletion.");
+            return;
+          }
+          
+          const confirmAgain = confirm("Are you absolutely sure you want to PERMANENTLY delete this conversation and all associated replies/notes/drafts? This action is IRREVERSIBLE!");
+          if (!confirmAgain) return;
+          
+          btnPermanentDelete.disabled = true;
+          btnPermanentDelete.textContent = "Deleting...";
+          
+          try {
+            const res = await adminFetch(`http://127.0.0.1:8000/api/conversations/${activeSessionId}`, {
+              method: "DELETE"
+            });
+            if (!res.ok) {
+              throw new Error(`Failed to delete conversation: ${res.statusText}`);
+            }
+            
+            // Delete locally
+            delete sessions[activeSessionId];
+            activeSessionId = null;
+            deleteConfirmInput.value = "";
+            
+            // Clear details sheet
+            detailStoreId.textContent = "—";
+            detailSessionId.textContent = "—";
+            detailEscalated.textContent = "—";
+            detailCreatedAt.textContent = "—";
+            detailMatchedSource.textContent = "—";
+            detailConfidence.textContent = "—";
+            
+            // Hide panels
+            actionsSection.style.display = "none";
+            notesSection.style.display = "none";
+            composerSection.style.display = "none";
+            
+            // Re-render
+            renderDashboard(searchInput.value);
+            
+            alert("Conversation permanently deleted.");
+          } catch (err) {
+            alert(`Error deleting conversation: ${err.message}`);
+          } finally {
+            btnPermanentDelete.disabled = false;
+            btnPermanentDelete.textContent = "Permanently Delete";
+          }
+        });
+      }
 
       // Save Note Button Listener
       if (btnSaveNote) {
@@ -2187,11 +2354,11 @@
       }
 
       // Status Tab Listeners
-      document.querySelectorAll(".status-tab").forEach(tab => {
+      document.querySelectorAll(".status-tab-pill").forEach(tab => {
         tab.addEventListener("click", () => {
           if (tab.hasAttribute("disabled")) return;
           
-          document.querySelectorAll(".status-tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".status-tab-pill").forEach(t => t.classList.remove("active"));
           tab.classList.add("active");
           activeStatusFilter = tab.dataset.status;
           renderDashboard(searchInput.value);
