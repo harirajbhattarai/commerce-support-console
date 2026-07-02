@@ -205,6 +205,72 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
         "matched_title": matched_title,
         "matched_content": matched_content
     }
+
+@app.get("/api/test-agent")
+async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
+    # 1. Detect intent and risk
+    from app.services.support_brain import detect_intent_and_risk, generate_support_reply
+    intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(q)
+    
+    # 2. Retrieve knowledge matching same logic as chat_endpoint
+    store_articles = knowledge_base.get(store_id, [])
+    matched_content = None
+    matched_title = None
+    
+    if supabase_client:
+        try:
+            from app.services.knowledge_service import KnowledgeService
+            ret_res = await KnowledgeService.get_support_knowledge(
+                query=q,
+                store_id=store_id
+            )
+            if ret_res.get("success"):
+                k_list = ret_res.get("knowledge", [])
+                a_list = ret_res.get("articles", [])
+                match = rank_knowledge_matches(q, k_list, a_list)
+                if match:
+                    matched_content, matched_title = match
+        except Exception as err:
+            print(f"Error in test-agent knowledge search: {err}")
+            
+    if not matched_content:
+        # Local JSON fallback
+        q_words = [word.strip("?,.!") for word in q.lower().split()]
+        for article in store_articles:
+            keywords = article.get("keywords", [])
+            for keyword in keywords:
+                if keyword in q_words or keyword in q.lower():
+                    matched_content = article["content"]
+                    matched_title = article["title"]
+                    break
+            if matched_content:
+                break
+                
+    # 3. Call generate_support_reply to see the mock or real answer
+    brain_res = generate_support_reply(
+        store_id=store_id,
+        session_id="test-session-agent",
+        user_message=q,
+        previous_context=[],
+        retrieved_knowledge=matched_content,
+        rules_fallback_reply="General support rules fallback answer.",
+        matched_title=matched_title
+    )
+    
+    route_decision = "escalated" if brain_res["should_escalate"] else (
+        "answered_by_minimax" if brain_res["brain_mode"] == "minimax" else "rules_fallback"
+    )
+    
+    return {
+        "query": q,
+        "store_id": store_id,
+        "detected_intent": brain_res["intent"],
+        "risk_level": risk_level,
+        "route_decision": route_decision,
+        "matched_titles": [matched_title] if matched_title else [],
+        "brain_mode": brain_res["brain_mode"],
+        "final_answer_preview": brain_res["reply_text"]
+    }
 def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list: list):
     query_words = set(w.strip("?,.!") for w in query_text.lower().split() if len(w) > 3)
     best_match = None
@@ -340,9 +406,10 @@ async def chat_endpoint(request: ChatRequest):
         }
         store_name = store_names.get(store_id, "our store")
         rules_fallback_reply = (
-            f"Thank you for contacting {store_name}. I couldn't find a direct match "
-            f"regarding that in our knowledge base. Would you like me to escalate "
-            f"your request to a human support agent?"
+            f"Thank you for contacting {store_name}. I want to make sure you get correct assistance. "
+            f"For general guidelines, please make sure your device is charged and operate it only on private land. "
+            f"If you need help with a specific order, technical fault, or warranty claim, please email us at contact@hoverboardstore.co.uk "
+            f"and our support team will get back to you shortly."
         )
         
         # 2. Fetch history

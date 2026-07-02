@@ -11,7 +11,11 @@ def detect_intent_and_risk(message_text: str):
     msg = message_text.lower().strip()
     
     # 1. Safety hazard keywords
-    safety_danger_keywords = ["smoke", "fire", "spark", "burning", "melt", "explode", "swell", "overheat", "hot", "burning smell"]
+    safety_danger_keywords = [
+        "smoke", "fire", "spark", "burning", "melt", "explode", "swell", "overheat", 
+        "hot", "burning smell", "sparks", "battery getting hot", "swelling", "water damage", 
+        "injury", "injured", "hurt", "damaged charger", "damaged battery"
+    ]
     has_safety_danger = any(kw in msg for kw in safety_danger_keywords)
     
     # 2. Legal threat keywords
@@ -26,57 +30,44 @@ def detect_intent_and_risk(message_text: str):
     human_keywords = ["speak to a person", "human please", "speak to someone", "agent please", "real person", "customer service", "support team", "live agent", "talk to human", "representative"]
     is_human_request = any(kw in msg for kw in human_keywords)
     
+    # 5. Order-specific or private account actions
+    order_actions = [
+        "where is my order", "track", "tracking", "order status", "delivery status", 
+        "haven't received", "parcel status", "when will it arrive", "delivered but not received",
+        "cancel my order", "cancel order", "cancellation", "change address", "change shipping address",
+        "refund approval", "replacement approval", "refund request", "replace my"
+    ]
+    is_order_specific = any(kw in msg for kw in order_actions)
+    
     intent = "unknown"
     risk_level = "low"
-    escalate = False
-    escalation_reason = ""
     
     if is_human_request:
         intent = "speak_to_human"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Customer requested live agent support"
     elif has_safety_danger:
         intent = "battery_safety"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Safety hazard keywords detected (heat/fire/smoke/sparks)"
     elif has_legal_threat:
         intent = "complaint"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Potential legal threat / dispute detected"
     elif has_payment_issue:
         intent = "unknown"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Payment/billing processing issue detected"
-    # Damaged item claim
+    elif is_order_specific:
+        intent = "order_issue"
+        risk_level = "high"
     elif any(kw in msg for kw in ["damaged", "broken", "faulty", "smashed", "cracked", "scratched", "dent", "dead on arrival", "defect"]):
         intent = "damaged_item"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Damaged or defective product claim reported"
-    # Refund question/dispute
     elif any(kw in msg for kw in ["refund", "money back", "charge back", "refund my"]):
         intent = "refund_question"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Refund claim or refund status request"
-    # Order-specific tracking
-    elif any(kw in msg for kw in ["where is my order", "track", "tracking", "order status", "delivery status", "haven't received", "parcel status", "when will it arrive"]):
-        intent = "order_tracking"
-        risk_level = "high"
-        escalate = True
-        escalation_reason = "Order-specific tracking lookup requested"
-    # Angry complaint
     elif any(kw in msg for kw in ["angry", "upset", "complaint", "complain", "scam", "rip off", "waste of money", "useless", "terrible", "worst"]):
         intent = "complaint"
         risk_level = "high"
-        escalate = True
-        escalation_reason = "Customer complaint or negative sentiment detected"
         
-    # If not already classified as high-risk, determine standard intent
+    # If not classified as high-risk, determine standard intent
     if intent == "unknown":
         if any(kw in msg for kw in ["delivery", "shipping", "shipment", "dispatch", "how long is delivery", "how long to ship", "postage"]):
             intent = "shipping_times"
@@ -98,25 +89,13 @@ def detect_intent_and_risk(message_text: str):
         elif any(kw in msg for kw in ["warranty", "guarantee"]):
             intent = "warranty_question"
             
-    # Safety Router Intent Rules
-    auto_answer_allowed_intents = {
-        "shipping_times",
-        "return_policy",
-        "battery_safety",
-        "charging_problem",
-        "reset_help",
-        "product_recommendation",
-        "age_suitability",
-        "discount_question",
-        "warranty_question"
-    }
-    
-    if intent in auto_answer_allowed_intents and risk_level == "low":
-        escalate = False
-    else:
+    # Escalate if risk level is high or explicit human request, otherwise allow chatbot auto-answering
+    if risk_level == "high" or intent == "speak_to_human":
         escalate = True
-        if not escalation_reason:
-            escalation_reason = f"Intent '{intent}' with risk level '{risk_level}' requires human escalation"
+        escalation_reason = f"High risk query ({intent}) requires support agent review"
+    else:
+        escalate = False
+        escalation_reason = ""
             
     return intent, risk_level, escalate, escalation_reason
 
@@ -131,16 +110,27 @@ def construct_system_prompt(store_id: str, retrieved_knowledge: str) -> str:
     }
     store_name = store_names.get(store_id, "our store")
     
+    general_policies = """
+- Product Stopped Working / Not Turning On: If your hoverboard has stopped working, first make sure it is fully charged and check the charger light. Do not use or charge it if there is any burning smell, smoke, overheating, swelling, water damage, or visible damage. If it still does not work, contact contact@hoverboardstore.co.uk with your order number, a short description of the issue, and photos/videos if safe. Our team can then advise the next step under the 12-month warranty where applicable.
+- Reset & Calibration: If the hoverboard is beeping or has red flashing lights, it may need to be reset. Turn it off, place it on a flat level surface, hold the power button down for 10 seconds until the lights flash, turn it off again, and then turn it back on.
+- Warranty: Hoverboard Store provides a 12-Month Warranty covering manufacturing defects and technical malfunctions. Physical drops, water damage, and general wear and tear are not covered.
+- Returns: Customers can return unused items in their original packaging within 30 days. Contact contact@hoverboardstore.co.uk to initiate.
+- Contact: For any other support issues, customers should email contact@hoverboardstore.co.uk.
+"""
+    
     return f"""You are the friendly customer support assistant for {store_name}.
-Your job is to answer customer questions accurately and safely using ONLY the provided Knowledge Base context below.
+Your job is to answer customer questions accurately and safely using the provided Knowledge Base context and general policies below.
 
 === STRICT GUIDELINES ===
-1. Only answer based on the official Knowledge Base context provided. If you do not know the answer or if the context does not cover it, tell the customer you are transferring them to a support team member.
+1. Only answer based on the official Knowledge Base context and general policies provided. If a question is not covered at all, ask the customer to contact contact@hoverboardstore.co.uk for human help.
 2. DO NOT invent, hallucinate, or assume any customer order details, tracking numbers, shipping dates, or postcodes.
 3. DO NOT promise, guarantee, or authorize refunds, replacements, or discount codes unless they are explicitly written in the context.
 4. DO NOT make any legal assertions or medical claims.
 5. If the customer reports any safety hazards, battery swelling, overheating, sparks, smoke, fire, or burning smells, instruct them to stop using and unplug the device immediately, place it in a safe outdoor location, and escalate to a human agent. Do not attempt any other troubleshooting.
 6. Keep your answers brief, friendly, helpful, and under 3-4 sentences where possible.
+
+=== GENERAL POLICIES ===
+{general_policies}
 
 === KNOWLEDGE BASE CONTEXT ===
 {retrieved_knowledge}
@@ -160,6 +150,7 @@ def generate_support_reply(
     """
     # 1. Detect Intent and Safety check
     intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(user_message)
+    msg = user_message.lower().strip()
     
     # 2. If safety router triggers forced escalation, return holding reply immediately
     if should_escalate:
@@ -167,6 +158,8 @@ def generate_support_reply(
             reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
         elif intent == "battery_safety":
             reply_text = "Thanks — I’ve passed this to our support team. A team member will reply here shortly."
+        elif intent == "order_issue":
+            reply_text = "To help you with this order request, please provide your order reference number, full name, and billing postcode. Once verified, our support team will update you shortly."
         else:
             reply_text = "Our support team has been notified and a representative will reply here shortly."
             
@@ -186,14 +179,26 @@ def generate_support_reply(
     
     if not api_key:
         # Fallback to rules if API key missing
-        reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+        if "stops working" in msg or "not working" in msg or "stopped working" in msg:
+            reply_text = "Sorry to hear that. If your hoverboard has stopped working, first make sure it is fully charged and check the charger light. Do not use or charge it if there is any burning smell, smoke, overheating, swelling, water damage, or visible damage. If it still does not work, contact contact@hoverboardstore.co.uk with your order number, a short description of the issue, and photos/videos if safe. Our team can then advise the next step under the 12-month warranty where applicable."
+        elif "reset" in msg or "calibrate" in msg or "calibration" in msg:
+            reply_text = "If your hoverboard is beeping or flashing red lights, it may need a reset. Turn it off, place it on a flat, level surface, press and hold the power button for 10 seconds until the lights flash, turn it off again, and then turn it back on to calibrate it."
+        elif "delivery" in msg or "shipping" in msg or "dispatch" in msg or "how long" in msg:
+            reply_text = "Standard shipping takes 2 to 3 business days and is free within the UK. Next-day delivery is available at checkout for orders placed before 2 PM GMT."
+        elif "return" in msg or "refund" in msg:
+            reply_text = "We offer a 30-day return policy for unused items in their original packaging. Please contact contact@hoverboardstore.co.uk to start your return."
+        elif "warranty" in msg:
+            reply_text = "Our hoverboards come with a 12-month warranty covering manufacturing faults and technical issues. Physical damage is not covered."
+        else:
+            reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+            
         return {
             "reply_text": reply_text,
             "intent": intent,
             "confidence": 1.0 if matched_title else 0.0,
             "source_used": matched_title or "Rules Fallback (No Match)",
-            "should_escalate": matched_title is None, # Escalate if no matching article in rules mode
-            "escalation_reason": "No matching knowledge article" if matched_title is None else "",
+            "should_escalate": False, # Do not escalate standard fallback matches if they are handled by rules
+            "escalation_reason": "",
             "brain_mode": "fallback"
         }
         
@@ -258,13 +263,25 @@ def generate_support_reply(
     except Exception as e:
         print(f"Error invoking MiniMax API support brain: {e}")
         # Graceful fallback to rules-based logic on LLM failure
-        reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+        if "stops working" in msg or "not working" in msg or "stopped working" in msg:
+            reply_text = "Sorry to hear that. If your hoverboard has stopped working, first make sure it is fully charged and check the charger light. Do not use or charge it if there is any burning smell, smoke, overheating, swelling, water damage, or visible damage. If it still does not work, contact contact@hoverboardstore.co.uk with your order number, a short description of the issue, and photos/videos if safe. Our team can then advise the next step under the 12-month warranty where applicable."
+        elif "reset" in msg or "calibrate" in msg or "calibration" in msg:
+            reply_text = "If your hoverboard is beeping or flashing red lights, it may need a reset. Turn it off, place it on a flat, level surface, press and hold the power button for 10 seconds until the lights flash, turn it off again, and then turn it back on to calibrate it."
+        elif "delivery" in msg or "shipping" in msg or "dispatch" in msg or "how long" in msg:
+            reply_text = "Standard shipping takes 2 to 3 business days and is free within the UK. Next-day delivery is available at checkout for orders placed before 2 PM GMT."
+        elif "return" in msg or "refund" in msg:
+            reply_text = "We offer a 30-day return policy for unused items in their original packaging. Please contact contact@hoverboardstore.co.uk to start your return."
+        elif "warranty" in msg:
+            reply_text = "Our hoverboards come with a 12-month warranty covering manufacturing faults and technical issues. Physical damage is not covered."
+        else:
+            reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
+            
         return {
             "reply_text": reply_text,
             "intent": intent,
             "confidence": 1.0 if matched_title else 0.0,
             "source_used": matched_title or "Rules Fallback (No Match)",
-            "should_escalate": matched_title is None,
-            "escalation_reason": "MiniMax API connection failure",
+            "should_escalate": False,
+            "escalation_reason": "",
             "brain_mode": "fallback"
         }

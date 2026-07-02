@@ -507,6 +507,164 @@ def test_shopify_widget_payload_variations():
                 
     print("\nALL SHOPIFY WIDGET PAYLOAD VARIATIONS TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_ai_support_agent_scenarios():
+    print("\nStarting integration test for AI Support Agent grouped scenarios...")
+    
+    # Configure token
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+    
+    created_sessions = []
+    
+    # Temporarily set MINIMAX_API_KEY to empty to check safe rules/fallback matching
+    original_key = settings.MINIMAX_API_KEY
+    settings.MINIMAX_API_KEY = ""
+    
+    try:
+        # A. Product Recommendations (Low Risk -> Auto-answer with helpful guidance)
+        recs = [
+            "my son is 9 never used one before which hoverboard should i get",
+            "is 6.5 hoverboard ok for my daughter she is beginner",
+            "what one is better for kids hoverboard or kart bundle",
+            "is 8.5 inch too big for a child"
+        ]
+        for q in recs:
+            sid = f"test-ai-rec-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            # Verify helpful details are returned, not fallback warning
+            assert "couldn't find" not in data["reply"].lower()
+            assert any(w in data["reply"].lower() for w in ["6.5", "8.5", "kart", "beginner", "bundle", "kids"])
+            
+        # B. Faults/Troubleshooting (Low/Medium Risk -> Auto-answer with general policy / reset help)
+        faults = [
+            ("if it stops working what do i do", ["make sure it is fully charged", "stops working"]),
+            ("hoverboard not turning on", ["make sure it is fully charged", "calibrate", "flat", "level"]),
+            ("charger light not coming on", ["charger", "charge"]),
+            ("how do i reset it", ["flat level surface", "calibrate", "flat"])
+        ]
+        for q, expected_keywords in faults:
+            sid = f"test-ai-fault-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            assert "couldn't find" not in data["reply"].lower()
+            assert any(kw in data["reply"].lower() for kw in expected_keywords)
+            
+        # C. Delivery (Low Risk -> Auto-answer with shipping times)
+        deliveries = [
+            ("how long delivery take", "days"),
+            ("do u do next day delivery", "next-day"),
+            ("is delivery free in uk", "free")
+        ]
+        for q, expected_keyword in deliveries:
+            sid = f"test-ai-del-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            assert "couldn't find" not in data["reply"].lower()
+            assert expected_keyword in data["reply"].lower()
+            
+        # D. Returns/Warranty (Low Risk -> Auto-answer)
+        returns_warranty = [
+            ("can i return if my child dont like it", "30-day"),
+            ("how many months warranty", "12-month"),
+            ("if it breaks after few weeks what happens", "warranty")
+        ]
+        for q, expected_keyword in returns_warranty:
+            sid = f"test-ai-ret-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            assert "couldn't find" not in data["reply"].lower()
+            assert expected_keyword in data["reply"].lower()
+            
+        # E. Safety Escalations (High Risk -> Forced escalation holding reply)
+        safety = [
+            "battery getting hot what should i do",
+            "my hoverboard smells burning",
+            "it is making smoke while charging"
+        ]
+        for q in safety:
+            sid = f"test-ai-safe-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            assert "support team" in data["reply"].lower() or "representative" in data["reply"].lower()
+            # Verify escalated status in database
+            conv_res = client.get("/api/conversations", headers=headers)
+            log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == sid), None)
+            assert log is not None
+            assert log.get("status") == "needs_escalation"
+            
+        # F. Order-specific (High Risk -> Ask for verification / escalation)
+        orders = [
+            "where is my order",
+            "i ordered yesterday tracking not received",
+            "can you cancel my order"
+        ]
+        for q in orders:
+            sid = f"test-ai-order-{uuid.uuid4()}"
+            created_sessions.append(sid)
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q,
+                "conversation_id": sid
+            })
+            assert res.status_code == 200
+            data = res.json()
+            print(f"Query: '{q}' -> Bot Reply: '{data['reply']}'")
+            assert "provide your order reference number" in data["reply"].lower()
+            # Verify escalated status in database
+            conv_res = client.get("/api/conversations", headers=headers)
+            log = next((log for log in conv_res.json().get("logs", []) if log["session_id"] == sid), None)
+            assert log is not None
+            assert log.get("status") == "needs_escalation"
+            
+    finally:
+        settings.MINIMAX_API_KEY = original_key
+        print("[Cleanup] Cleaning up AI Support Agent test sessions...")
+        for sid in created_sessions:
+            try:
+                client.delete(f"/api/conversations/{sid}", headers=headers)
+            except Exception as e:
+                print(f"Failed to delete test session {sid}: {e}")
+                
+    print("\nALL AI SUPPORT AGENT SCENARIOS TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
@@ -515,6 +673,7 @@ if __name__ == "__main__":
         test_support_brain_scenarios()
         test_widget_endpoint_resolution()
         test_shopify_widget_payload_variations()
+        test_ai_support_agent_scenarios()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")
