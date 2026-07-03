@@ -1,9 +1,9 @@
 # AI Support Agent — 90% Problem Solver Master Plan
 ## Hoverboard Store UK | Commerce Support Console
 
-**Version**: 1.0  
+**Version**: 1.1  
 **Status**: LOCKED ROADMAP  
-**Last Updated**: 2026-07-02  
+**Last Updated**: 2026-07-03  
 **Contact**: contact@hoverboardstore.co.uk  
 
 ---
@@ -34,9 +34,10 @@ These actions are **explicitly prohibited** until the relevant phase is complete
 | Push risky changes to `main` without staging test | Could break live customer widget on hoverboardstore.co.uk |
 | Add MiniMax prompt fixes without dataset tests | Regressions are invisible without test coverage |
 | Build auto-refund or auto-replacement before human approval system | Financial risk. Phase 6 human approval gates must be in place first. |
-| Add vector embeddings before clean knowledge and product data | Garbage in, garbage out. Phase 3 must complete first. |
+| Add vector embeddings before clean Product Support Passports and knowledge chunks exist | Embedding weak/general knowledge produces poor retrieval. Phase 3A passports must be clean and complete first. Garbage in, garbage out. |
 | Change widget design while backend support logic is weak | UX improvements are meaningless if replies are wrong |
 | Solve one random customer question without adding it to the dataset | Creates invisible technical debt |
+| Build broad shallow knowledge across all products before one product is fully solved | Width without depth means 40% resolution, not 90%. Phase 3A vertical slice must complete first. |
 
 ---
 
@@ -56,12 +57,22 @@ These actions are **explicitly prohibited** until the relevant phase is complete
 | `/api/test-agent` debug endpoint | ✅ Live |
 | STAGING dashboard badge | ✅ Live |
 | Battery safety escalation (immediate guidance) | ✅ Live |
-| Staging environment isolation | ⚠️ Partial — may share Supabase project |
-| Accurate status routing (low/medium risk) | ⚠️ Known issue — Phase 1 |
-| 200-question intent dataset | ❌ Not started — Phase 2 |
+| Accurate status routing (low/medium risk auto_replied) | ✅ Fixed — Phase 1 complete |
+| Staging demo widget → staging backend (not localhost) | ✅ Fixed |
+| 204-question evaluation dataset (v2) | ✅ Created — evaluation/regression use only |
+| Staging Supabase isolation | ⚠️ Partial — may share Supabase project |
+| Product Support Passport — 6.5" hoverboard bundle | ❌ Not started — Phase 3A |
+| Knowledge chunks from passport | ❌ Not started — Phase 3A |
+| Dataset test runner (`run_dataset_tests.py`) | ❌ Not started — Phase 2 |
 | Shopify read-only order lookup | ❌ Not started — Phase 4 |
 | Support case intake system | ❌ Not started — Phase 5 |
 | 90% resolution analytics | ❌ Not started — Phase 7 |
+
+> [!NOTE]
+> The 204-question dataset (`customer_question_dataset_v2.json`) is an **evaluation and regression testing tool**.
+> It contains messy, realistic customer phrasing for testing routing and answer quality.
+> It is **not** a list of predefined questions that customers must type exactly.
+> Customers should speak naturally. The bot must handle natural language.
 
 ---
 
@@ -69,10 +80,11 @@ These actions are **explicitly prohibited** until the relevant phase is complete
 
 | Phase | Name | Target | Current |
 | :--- | :--- | :--- | :--- |
-| **Phase 0** | Environment Safety | Isolated staging, release controls | ⚠️ In Progress |
-| **Phase 1** | Agent v1 Stability | Accurate routing, no wrong escalations | ⚠️ In Progress |
-| **Phase 2** | Intent Dataset v2 | 200-question dataset, all intents covered | ❌ Not Started |
+| **Phase 0** | Environment Safety | Isolated staging, release controls | ✅ Substantially Complete |
+| **Phase 1** | Agent v1 Stability | Accurate routing, no wrong escalations | ✅ Complete |
+| **Phase 2** | Intent Dataset v2 | 204-question dataset, dataset test runner | ⚠️ Dataset exists. Test runner pending. |
 | **Phase 3** | Knowledge Brain v2 | Expanded articles + troubleshooting | ❌ Not Started |
+| **Phase 3A** | **Product Support Passport — Vertical Slice** | **Full A–Z support brain for 6.5" hoverboard + hoverkart bundle** | **❌ Not Started** |
 | **Phase 4** | Shopify Read-Only | Order lookup for verification | ❌ Not Started |
 | **Phase 5** | Case Intake | Structured case creation | ❌ Not Started |
 | **Phase 6** | Controlled Actions | Draft reply, tag, case recommendation | ❌ Not Started |
@@ -160,11 +172,24 @@ Low-risk product questions (e.g. "which hoverboard is best for a 9 year old") ma
 
 ---
 
-## Phase 3: Knowledge and Product Brain v2
+## Phase 3: Knowledge Brain v2
 
-**Objective**: Expand the Supabase knowledge base to cover all common support scenarios.
+**Objective**: Systematically expand the Supabase knowledge base through Product Support Passports — one product family at a time, A–Z, before moving to the next.
 
-### Articles to Add
+### Strategic Approach: Vertical Slice First
+
+Do **not** attempt to add shallow knowledge across all products simultaneously. The 90% resolution target requires depth, not breadth. The first product family must be fully solved before moving to the next.
+
+**Order of execution:**
+1. Phase 3A — 6.5" hoverboard + hoverkart bundle (see below)
+2. Phase 3B — 8.5" off-road hoverboard
+3. Phase 3C — G1 Pro hoverboard + hoverkart
+4. Phase 3D — Kids electric scooter
+5. Phase 3E — Accessories and spare parts
+
+Each product family gets a **Product Support Passport** — a complete structured document covering pre-sale, setup, troubleshooting, safety, returns/warranty, and case intake rules.
+
+### Articles to Add (Carried Forward to each phase)
 - Reset/calibration steps per model
 - Charging port inspection guide
 - Wheel/motor fault identification
@@ -180,13 +205,77 @@ Low-risk product questions (e.g. "which hoverboard is best for a 9 year old") ma
 ### Database Changes
 - New rows in `support_articles` and `product_knowledge`
 - No schema changes — extends existing tables
+- Knowledge chunks derived directly from Product Support Passports
 
-### Acceptance Gate
+### Acceptance Gate (Carried Forward)
 - All Phase 2 dataset questions relating to known topics produce a matched knowledge article
 - Zero "I couldn't find a direct match" replies for known-topic queries
 
 > [!WARNING]
-> Do NOT implement vector/semantic embeddings until Phase 3 is complete and the knowledge data is clean and accurate. Embedding noisy or incomplete data makes retrieval worse, not better.
+> Do NOT implement vector/semantic embeddings until at least one complete Product Support Passport has been converted to clean knowledge chunks and inserted into Supabase. Embedding noisy or incomplete data makes retrieval worse, not better.
+
+---
+
+## Phase 3A: Product Support Passport — Vertical Slice
+
+**Objective**: Build the complete support brain for the **6.5" hoverboard + hoverkart bundle** from A to Z — including pre-sale, setup, troubleshooting, safety, returns/warranty, and case intake rules — then use that as the template for all other products.
+
+### Why This Product Family First
+
+The 6.5" hoverboard + hoverkart bundle is the most common product family purchased by parents buying for children. It generates the highest volume of:
+- Age suitability and beginner guidance questions
+- First-use and setup questions
+- Not turning on / calibration / beeping questions
+- Hoverkart fitting and compatibility questions
+- Battery safety escalation events
+- Returns and warranty claims
+
+Solving this product family completely gives the highest customer resolution return.
+
+### Deliverables
+
+| Deliverable | File | Status |
+| :--- | :--- | :--- |
+| Knowledge chunk schema definition | `backend/docs/KNOWLEDGE_CHUNK_SCHEMA_PLAN.md` | ❌ New |
+| Product Support Passport template | `backend/docs/PRODUCT_SUPPORT_PASSPORT_TEMPLATE.md` | ❌ New |
+| 6.5" hoverboard bundle passport | `backend/docs/PRODUCT_SUPPORT_PASSPORT_6_5_HOVERBOARD_BUNDLE_V1.md` | ❌ New |
+| Supabase knowledge SQL seed | `backend/knowledge_pack_6_5_hoverboard_v2.sql` | ❌ Next task |
+| Dataset extension for passport coverage | `backend/tests/customer_question_dataset_v2.json` | ⚠️ Extend |
+
+### Passport Sections (Required for Phase 3A)
+
+**A. Product Identity** — name, aliases, customer wording, spelling variants, related SKUs
+
+**B. Pre-sale Questions** — age suitability, beginner guidance, 6.5 vs 8.5 comparison, hoverkart vs standalone, birthday gift questions, safety expectations
+
+**C. Setup and First Use** — unboxing, charging, power on, first ride steps, calibration, safety gear, private land rule (UK law)
+
+**D. Troubleshooting** — not turning on, charger light colour meaning, beeping codes, balance issues, Bluetooth/speaker, LED lights, battery life, hoverkart attachment issues
+
+**E. High-Risk Safety Escalation** — smoke, burning smell, sparks, overheating, swollen battery, water damage, visible charger/battery damage (always immediate escalation with safety stop-use message)
+
+**F. Returns and Warranty** — 30-day return window, 12-month warranty scope, what is covered, what is not covered, evidence required, when human approval is required before any action
+
+**G. Case Intake** — required fields before a case is opened: order number, email/postcode, product, issue description, charger light colour, when issue started, photos/videos, safety check, recommended dashboard case type
+
+**H. Bot Behaviour Rules** — allowed answers, forbidden answers, when to escalate, when to create a case, when Shopify order lookup is required
+
+### Acceptance Gate (Phase 3A)
+- Product Support Passport for 6.5" bundle is complete and reviewed ✅
+- Knowledge chunks derived from passport are inserted into staging Supabase ✅
+- All 6.5" bundle questions in the Phase 2 dataset produce a matched answer ✅
+- Safety escalation for any battery/fire/smoke query works for this product family ✅
+- `/api/test-agent` output reviewed for at least 20 passport-specific queries ✅
+- Full integration test suite passes with new knowledge ✅
+
+> [!IMPORTANT]
+> Phase 3A is the **gating condition** for starting vector/semantic embeddings.
+> Do not add embeddings until the passport knowledge is clean, structured, and inserted.
+> Embeddings over weak or general knowledge will produce poor retrieval results and will not pass the Phase 2 dataset test runner at ≥ 90%.
+
+### Positioning in the Roadmap
+
+Phase 3A sits **between Phase 3 (Knowledge Brain v2) and Phase 4 (Shopify Read-Only)**. It is not optional. It is the primary execution path for Phase 3 because a Product Support Passport is the only reliable way to produce knowledge chunks that are dense, accurate, and traceable.
 
 ---
 
@@ -342,4 +431,7 @@ Low-risk product questions (e.g. "which hoverboard is best for a 9 year old") ma
 | `CASE_INTAKE_WORKFLOWS.md` | Case types, fields, intake conversation flows |
 | `HUMAN_APPROVAL_RULES.md` | What requires human sign-off before any action |
 | `ANALYTICS_AND_IMPROVEMENT_LOOP.md` | Metrics, improvement queue, dataset update process |
-| `backend/tests/customer_question_dataset_v2.json` | 200+ regression test questions |
+| `KNOWLEDGE_CHUNK_SCHEMA_PLAN.md` | Schema and rules for writing knowledge chunks from passports |
+| `PRODUCT_SUPPORT_PASSPORT_TEMPLATE.md` | Blank reusable passport template for any product family |
+| `PRODUCT_SUPPORT_PASSPORT_6_5_HOVERBOARD_BUNDLE_V1.md` | First completed passport — 6.5" hoverboard + hoverkart bundle |
+| `backend/tests/customer_question_dataset_v2.json` | 204-question evaluation dataset (realistic messy phrasing) |

@@ -18,54 +18,95 @@
 | 0.5 | Staging responses return `X-Robots-Tag: noindex, nofollow` | curl response header check | ✅ |
 | 0.6 | Integration test suite passes green on staging before any `main` merge | `./venv/bin/python test_takeover_flow.py` output | ✅ |
 | 0.7 | Staging Supabase is isolated or clearly prefixed from production data | Supabase project dashboard | ⚠️ Pending |
+| 0.8 | Staging demo widget calls staging backend (not localhost or port 8000) | curl/browser check on staging root page | ✅ |
 
-**Phase 0 Overall**: ⚠️ Partially complete. Gate 0.7 required for full sign-off.
+**Phase 0 Overall**: ⚠️ Substantially complete. Gate 0.7 required for full sign-off.
 
 ---
 
 ## Phase 1 Gate: Agent v1 Stability
 
-| # | Gate | Evidence Required |
-| :--- | :--- | :--- |
-| 1.1 | No `product_recommendation` queries produce `needs_escalation` status | Dataset test runner output |
-| 1.2 | No `delivery_general` queries produce `needs_escalation` status | Dataset test runner output |
-| 1.3 | No `return_policy` or `warranty_policy` queries produce `needs_escalation` status | Dataset test runner output |
-| 1.4 | All `battery_safety` queries return immediate safety guidance | Dataset test runner output |
-| 1.5 | All `speak_to_human` queries produce `needs_escalation` status | Dataset test runner output |
-| 1.6 | All `order_issue` queries ask for verification details before escalating | Dataset test runner output |
-| 1.7 | `/api/test-agent` returns correct `route_decision` for at least 30 sampled queries | Manual API test |
-| 1.8 | Full integration test suite passes on staging | `./venv/bin/python test_takeover_flow.py` |
+| # | Gate | Evidence Required | Status |
+| :--- | :--- | :--- | :--- |
+| 1.1 | No `product_recommendation` queries produce `needs_escalation` status | `test_status_routing_assertions` output | ✅ |
+| 1.2 | No `delivery_general` queries produce `needs_escalation` status | `test_status_routing_assertions` output | ✅ |
+| 1.3 | No `return_policy` or `warranty_policy` queries produce `needs_escalation` status | `test_status_routing_assertions` output | ✅ |
+| 1.4 | All `battery_safety` queries return immediate safety guidance | `test_status_routing_assertions` output | ✅ |
+| 1.5 | All `speak_to_human` queries produce `needs_escalation` status | `test_status_routing_assertions` output | ✅ |
+| 1.6 | All `order_issue` queries ask for verification details before escalating | Integration test | ✅ |
+| 1.7 | `/api/test-agent` returns correct `route_decision` for at least 30 sampled queries | Manual API test | ✅ |
+| 1.8 | Full integration test suite passes on staging | `./venv/bin/python test_takeover_flow.py` | ✅ |
+| 1.9 | Low-risk helpful bot answers saved with `auto_replied` status (not `needs_escalation`) | Test suite + Supabase query | ✅ |
 
-**Must pass before**: Phase 2 dataset work begins targeting routing fixes.
+**Phase 1 Overall**: ✅ Complete.
+
+> [!NOTE]
+> The 204-question evaluation dataset (`customer_question_dataset_v2.json`) exists and covers 24 intents.
+> It is used for regression testing only — not for exact customer message matching.
+> The dataset test runner (`run_dataset_tests.py`) is the remaining Phase 2 item.
+
+**Must pass before**: Phase 2 dataset test runner work begins.
 
 ---
 
 ## Phase 2 Gate: Intent Dataset v2
 
-| # | Gate | Evidence Required |
-| :--- | :--- | :--- |
-| 2.1 | Dataset contains ≥ 200 unique customer questions | `customer_question_dataset_v2.json` item count |
-| 2.2 | All 24 defined intents have ≥ 5 dataset examples each | Dataset intent coverage report |
-| 2.3 | Dataset test runner (`run_dataset_tests.py`) exists and runs without error | Script execution |
-| 2.4 | Dataset test runner achieves ≥ 85% pass rate on staging | Test runner output |
-| 2.5 | Dataset test runner achieves ≥ 90% pass rate before production deploy | Test runner output |
-| 2.6 | Every chatbot code change is validated against full dataset before staging push | Git PR checklist |
+| # | Gate | Evidence Required | Status |
+| :--- | :--- | :--- | :--- |
+| 2.1 | Dataset contains ≥ 200 unique customer questions | `customer_question_dataset_v2.json` item count | ✅ 204 items |
+| 2.2 | All 24 defined intents have ≥ 5 dataset examples each | Dataset intent coverage report | ✅ |
+| 2.3 | Dataset test runner (`run_dataset_tests.py`) exists and runs without error | Script execution | ❌ Pending |
+| 2.4 | Dataset test runner achieves ≥ 85% pass rate on staging | Test runner output | ❌ Pending |
+| 2.5 | Dataset test runner achieves ≥ 90% pass rate before production deploy | Test runner output | ❌ Pending |
+| 2.6 | Every chatbot code change is validated against full dataset before staging push | Git PR checklist | ❌ Pending |
 
-**Must pass before**: Phase 3 knowledge expansion begins.
+**Phase 2 Overall**: ⚠️ Dataset created. Test runner not yet built.
+
+**Must pass before**: Phase 3A passport implementation begins (Phase 3A may proceed in parallel with Phase 2 test runner build since the passport work is documentation, not code).
 
 ---
 
 ## Phase 3 Gate: Knowledge Brain v2
 
-| # | Gate | Evidence Required |
-| :--- | :--- | :--- |
-| 3.1 | ≥ 12 new `support_articles` rows added to Supabase | Database count query |
-| 3.2 | All common troubleshooting intents (reset, charging, stopped working, not turning on) return a matched article | `/api/test-agent` output for each query |
-| 3.3 | Zero `"I couldn't find a direct match"` replies for known-topic queries in the Phase 2 dataset | Dataset test runner output |
-| 3.4 | New knowledge rows are seeded into staging Supabase before production | Staging test confirmation |
-| 3.5 | Full dataset test runner achieves ≥ 90% pass rate with new knowledge | Test runner output |
+| # | Gate | Evidence Required | Status |
+| :--- | :--- | :--- | :--- |
+| 3.1 | ≥ 12 new `support_articles` rows added to Supabase | Database count query | ❌ Pending |
+| 3.2 | All common troubleshooting intents (reset, charging, stopped working, not turning on) return a matched article | `/api/test-agent` output for each query | ❌ Pending |
+| 3.3 | Zero `"I couldn't find a direct match"` replies for known-topic queries in the Phase 2 dataset | Dataset test runner output | ❌ Pending |
+| 3.4 | New knowledge rows are seeded into staging Supabase before production | Staging test confirmation | ❌ Pending |
+| 3.5 | Full dataset test runner achieves ≥ 90% pass rate with new knowledge | Test runner output | ❌ Pending |
+| 3.6 | Phase 3A Product Support Passport is complete before any knowledge SQL is written | Passport document review | ❌ Pending |
+
+**Phase 3 Overall**: ❌ Not started. Phase 3A passport work must precede SQL seed creation.
 
 **Must pass before**: Phase 4 Shopify integration begins.
+
+---
+
+## Phase 3A Gate: Product Support Passport — Vertical Slice
+
+> [!IMPORTANT]
+> Phase 3A is the primary execution path for Phase 3. Completing Phase 3A is required before:
+> - Writing the Supabase knowledge SQL seed (`knowledge_pack_6_5_hoverboard_v2.sql`)
+> - Starting vector/semantic embeddings
+> - Advancing to Phase 3B (8.5" off-road hoverboard)
+
+| # | Gate | Evidence Required | Status |
+| :--- | :--- | :--- | :--- |
+| 3A.1 | `KNOWLEDGE_CHUNK_SCHEMA_PLAN.md` is written and reviewed | Document review | ❌ Pending |
+| 3A.2 | `PRODUCT_SUPPORT_PASSPORT_TEMPLATE.md` is written with all 8 sections (A–H) | Document review | ❌ Pending |
+| 3A.3 | `PRODUCT_SUPPORT_PASSPORT_6_5_HOVERBOARD_BUNDLE_V1.md` is completed using the template | Document review | ❌ Pending |
+| 3A.4 | All passport sections A–H contain factual, accurate, store-specific content (not placeholders) | Reviewer sign-off | ❌ Pending |
+| 3A.5 | Knowledge chunks are derived from the passport and inserted into staging Supabase | Staging database check | ❌ Pending |
+| 3A.6 | All 6.5" bundle queries in the Phase 2 dataset return matched answers (not fallback) | `/api/test-agent` output | ❌ Pending |
+| 3A.7 | Battery/fire/smoke/overheating queries for this product trigger safety escalation | Integration test | ❌ Pending |
+| 3A.8 | At least 20 passport-specific queries reviewed in `/api/test-agent` | Manual check log | ❌ Pending |
+| 3A.9 | Full integration test suite passes on staging with new passport knowledge | `test_takeover_flow.py` output | ❌ Pending |
+| 3A.10 | No embeddings added until this gate is fully passed | Code audit | ❌ Pending |
+
+**Phase 3A Overall**: ❌ Docs created — implementation not yet started.
+
+**Enables**: Phase 3B (next product family), vector embeddings, and Phase 4 Shopify integration.
 
 ---
 
