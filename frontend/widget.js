@@ -3,7 +3,7 @@
    ========================================================================= */
 
 // Configuration Settings
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = window.location.origin;
 
 // Mock store product data for visual showcase
 const MOCK_STORES_CONTENT = {
@@ -375,36 +375,5 @@ function createTypingIndicator() {
 // MOCK CLIENT SIDE FALLBACK (When uvicorn server is offline)
 // --------------------------------------------------------------------------
 function getOfflineFallbackReply(storeId, userText) {
-  const cleanText = userText.toLowerCase();
-  
-  // Notice note telling user about starting the FastAPI server
-  const serverNote = "\n\n(⚠️ Note: Backend server is offline, displaying offline simulation reply.)";
-  
-  if (storeId === "hoverboard_store") {
-    if (cleanText.includes("ship") || cleanText.includes("deliver")) {
-      return "Hoverboards are shipped within 2-3 business days in the UK." + serverNote;
-    }
-    if (cleanText.includes("return") || cleanText.includes("refund")) {
-      return "We offer a 30-day return policy for unused products in original boxes." + serverNote;
-    }
-    if (cleanText.includes("battery") || cleanText.includes("charge")) {
-      return "Only charge on flat surfaces, do not leave unattended, and use the official charger." + serverNote;
-    }
-  } else if (storeId === "hcs_gadgets") {
-    if (cleanText.includes("warranty")) {
-      return "We provide a 12-month manufacturer warranty covering defects." + serverNote;
-    }
-    if (cleanText.includes("return") || cleanText.includes("fault")) {
-      return "Faulty gadgets can be returned for laboratory diagnostics within 14 days." + serverNote;
-    }
-  } else if (storeId === "aroma_haven") {
-    if (cleanText.includes("oil") || cleanText.includes("pets") || cleanText.includes("safe")) {
-      return "Always dilute essential oils before skin contact. Do not ingest, and keep away from pets." + serverNote;
-    }
-    if (cleanText.includes("broken") || cleanText.includes("leak") || cleanText.includes("package")) {
-      return "Fragile oils are in bubble sleeves. If broken, email support@aromahaven.co.uk within 48h." + serverNote;
-    }
-  }
-  
-  return `Thank you for asking. I didn't recognize that topic offline. Please make sure the FastAPI server is running (port 8000) for active knowledge base lookup.` + serverNote;
+  return "Sorry, our support assistant is temporarily unavailable. Please contact contact@hoverboardstore.co.uk.";
 }

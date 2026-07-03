@@ -838,6 +838,68 @@ def test_status_routing_assertions():
 
     print("\nALL STATUS ROUTING ASSERTION TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_staging_demo_widget_config():
+    print("\nStarting integration test for staging demo widget configuration...")
+    import pathlib
+
+    # Check backend mirrored path
+    path1 = pathlib.Path(__file__).parent / "frontend" / "widget.js"
+    # Check project root path
+    path2 = pathlib.Path(__file__).parent.parent / "frontend" / "widget.js"
+
+    for p in [path1, path2]:
+        if p.exists():
+            print(f"Checking widget file config at: {p}")
+            with open(p, "r", encoding="utf-8") as f:
+                content = f.read()
+            assert "const BACKEND_URL = window.location.origin;" in content, f"BACKEND_URL not set to window.location.origin in {p}"
+            assert "Backend server is offline" not in content, f"Found offline warning in {p}"
+            assert "offline simulation reply" not in content, f"Found offline simulation text in {p}"
+            assert "port 8000" not in content, f"Found port 8000 reference in offline function in {p}"
+            assert "Sorry, our support assistant is temporarily unavailable. Please contact contact@hoverboardstore.co.uk." in content, f"Expected fallback message not found in {p}"
+            print(f"✅ Staging/demo widget config verified successfully at {p.name}")
+
+    # Verify root endpoint serves HTML containing widget script/css reference
+    res = client.get("/")
+    assert res.status_code == 200, f"Failed to fetch staging root page: {res.text}"
+    assert "widget.css" in res.text, "index.html missing widget.css link"
+    assert "widget.js" in res.text, "index.html missing widget.js script"
+    print("✅ Staging homepage verified to serve correct references.")
+
+    # Call /api/chat directly simulating staging root widget message
+    session_id = f"test-staging-widget-{uuid.uuid4()}"
+    
+    # Test 1: “if it stops working what do i do” returns helpful answer
+    res_chat = client.post("/api/chat", json={
+        "store_id": "hoverboard_store",
+        "message": "if it stops working what do i do",
+        "conversation_id": session_id
+    })
+    assert res_chat.status_code == 200
+    data_chat = res_chat.json()
+    assert "support team has been notified" not in data_chat["reply"].lower(), "Expected helpful troubleshooting reply, got escalation holding reply"
+    assert "charge" in data_chat["reply"].lower() or "warranty" in data_chat["reply"].lower(), "Troubleshooting answer did not contain correct help keyword"
+    print("✅ Staging widget call for 'if it stops working what do i do' returns helpful answer.")
+
+    # Test 2: “my hoverboard smells burning” returns safety escalation answer
+    res_safe = client.post("/api/chat", json={
+        "store_id": "hoverboard_store",
+        "message": "my hoverboard smells burning",
+        "conversation_id": session_id
+    })
+    assert res_safe.status_code == 200
+    data_safe = res_safe.json()
+    assert "stop using" in data_safe["reply"].lower(), "Safety reply missing 'stop using'"
+    assert "flammable" in data_safe["reply"].lower(), "Safety reply missing 'flammable'"
+    print("✅ Staging widget call for 'my hoverboard smells burning' returns safety escalation answer.")
+
+    # Cleanup
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    headers = {"X-Admin-Token": admin_token}
+    client.delete(f"/api/conversations/{session_id}", headers=headers)
+
+    print("\nALL STAGING DEMO WIDGET TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
@@ -848,6 +910,7 @@ if __name__ == "__main__":
         test_shopify_widget_payload_variations()
         test_ai_support_agent_scenarios()
         test_status_routing_assertions()
+        test_staging_demo_widget_config()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")
