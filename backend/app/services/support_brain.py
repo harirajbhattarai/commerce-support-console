@@ -57,11 +57,13 @@ def detect_intent_and_risk(message_text: str):
     elif is_order_specific:
         intent = "order_issue"
         risk_level = "high"
-    elif any(kw in msg for kw in ["damaged", "broken", "faulty", "smashed", "cracked", "scratched", "dent", "dead on arrival", "defect"]):
-        intent = "damaged_item"
+    elif any(kw in msg for kw in ["dead on arrival", "arrived damaged", "arrived broken", "damaged on arrival", "box was damaged"]):
+        # Only escalate when item arrived damaged from courier — requires order verification
+        intent = "damaged_on_arrival"
         risk_level = "high"
-    elif any(kw in msg for kw in ["refund", "money back", "charge back", "refund my"]):
-        intent = "refund_question"
+    elif any(kw in msg for kw in ["refund approval", "refund my money", "charge back", "chargeback"]):
+        # Only escalate explicit refund approval demands — not "can I get a refund" (policy question)
+        intent = "refund_request"
         risk_level = "high"
     elif any(kw in msg for kw in ["angry", "upset", "complaint", "complain", "scam", "rip off", "waste of money", "useless", "terrible", "worst"]):
         intent = "complaint"
@@ -96,7 +98,7 @@ def detect_intent_and_risk(message_text: str):
     else:
         escalate = False
         escalation_reason = ""
-            
+
     return intent, risk_level, escalate, escalation_reason
 
 def construct_system_prompt(store_id: str, retrieved_knowledge: str) -> str:
@@ -170,7 +172,8 @@ def generate_support_reply(
             "source_used": matched_title or "Safety Router Escalation",
             "should_escalate": True,
             "escalation_reason": escalation_reason,
-            "brain_mode": "rules"
+            "brain_mode": "rules",
+            "route_decision": "escalated"
         }
         
     # 3. Check if MiniMax is configured
@@ -195,11 +198,12 @@ def generate_support_reply(
         return {
             "reply_text": reply_text,
             "intent": intent,
-            "confidence": 1.0 if matched_title else 0.0,
-            "source_used": matched_title or "Rules Fallback (No Match)",
-            "should_escalate": False, # Do not escalate standard fallback matches if they are handled by rules
+            "confidence": 1.0 if matched_title else 0.7,
+            "source_used": matched_title or "General Support Fallback",
+            "should_escalate": False,
             "escalation_reason": "",
-            "brain_mode": "fallback"
+            "brain_mode": "fallback",
+            "route_decision": "answered_by_rules"
         }
         
     # 4. MiniMax LLM Query execution
@@ -254,7 +258,8 @@ def generate_support_reply(
                 "source_used": matched_title or "MiniMax Knowledge Search",
                 "should_escalate": False,
                 "escalation_reason": "",
-                "brain_mode": "minimax"
+                "brain_mode": "minimax",
+                "route_decision": "answered_by_minimax"
             }
         else:
             print(f"MiniMax API returned error {response.status_code}: {response.text}")
@@ -279,9 +284,10 @@ def generate_support_reply(
         return {
             "reply_text": reply_text,
             "intent": intent,
-            "confidence": 1.0 if matched_title else 0.0,
-            "source_used": matched_title or "Rules Fallback (No Match)",
+            "confidence": 1.0 if matched_title else 0.7,
+            "source_used": matched_title or "General Support Fallback",
             "should_escalate": False,
             "escalation_reason": "",
-            "brain_mode": "fallback"
+            "brain_mode": "fallback",
+            "route_decision": "answered_by_rules"
         }

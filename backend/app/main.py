@@ -478,24 +478,30 @@ async def chat_endpoint(request: ChatRequest):
             source_used = brain_result["source_used"]
         except Exception as brain_err:
             print(f"ERROR: Support Brain crashed: {brain_err}")
-            # Safe absolute fallback
+            # Safe absolute fallback — do NOT escalate just because no article matched
             reply = matched_content if matched_content else rules_fallback_reply
-            is_escalated = matched_content is None
+            is_escalated = False  # fallback reply is still a helpful answer
             intent = "unknown"
-            confidence = 1.0 if matched_content else 0.0
-            escalation_reason = f"Support Brain exception: {str(brain_err)}"
+            confidence = 0.7 if matched_content else 0.5
+            escalation_reason = ""
             brain_mode = "fallback"
-            source_used = matched_title
+            source_used = matched_title or "General Support Fallback"
 
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
         try:
             if is_escalated:
                 escalated = True
-                status = db_status if db_status == "in_progress" else "needs_escalation"
+                # Preserve in_progress if staff already opened it; otherwise set needs_escalation
+                db_write_status = db_status if db_status == "in_progress" else "needs_escalation"
+                effective_status = db_write_status
             else:
                 escalated = False
-                status = "new"
+                # Use auto_replied as the effective status for helpful bot answers.
+                # DB column is constrained to: new / needs_escalation / in_progress / resolved
+                # We store the true effective_status inside the metadata JSON.
+                effective_status = "auto_replied"
+                db_write_status = db_status if db_status == "in_progress" else "new"
                 
             # Serialize metadata into matched_source safely
             try:
@@ -508,7 +514,8 @@ async def chat_endpoint(request: ChatRequest):
                     "intent": intent,
                     "source": safe_source,
                     "confidence": confidence,
-                    "escalation_reason": safe_reason
+                    "escalation_reason": safe_reason,
+                    "effective_status": effective_status
                 }
                 matched_source_str = json.dumps(meta_payload)
                 if len(matched_source_str) > 255:
@@ -527,7 +534,7 @@ async def chat_endpoint(request: ChatRequest):
                 "matched_source": matched_source_str,
                 "confidence": confidence,
                 "escalated": escalated,
-                "status": status
+                "status": db_write_status
             }
             supabase_client.table("chat_logs").insert(log_entry).execute()
         except Exception as db_err:
@@ -573,6 +580,11 @@ async def get_conversations(store_id: Optional[str] = None):
                         log["matched_source"] = meta.get("source")
                         log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
                         log["escalation_reason"] = meta.get("escalation_reason", "")
+                        # Surface effective_status from metadata so dashboard shows
+                        # auto_replied correctly (DB column is constrained to 'new')
+                        effective = meta.get("effective_status")
+                        if effective and log.get("status") == "new" and not log.get("escalated"):
+                            log["status"] = effective
                 except json.JSONDecodeError:
                     pass
 
@@ -601,7 +613,7 @@ async def update_conversation_status(session_id: str, status: str):
             detail="Supabase client is not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your backend/.env file."
         )
     
-    allowed_statuses = {"new", "needs_escalation", "in_progress", "resolved", "archived"}
+    allowed_statuses = {"new", "auto_replied", "needs_escalation", "in_progress", "resolved", "archived"}
     if status not in allowed_statuses:
         raise HTTPException(
             status_code=400,

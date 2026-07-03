@@ -669,6 +669,175 @@ def test_ai_support_agent_scenarios():
                 
     print("\nALL AI SUPPORT AGENT SCENARIOS TESTS PASSED SUCCESSFULLY! ✅")
 
+def test_status_routing_assertions():
+    """
+    Verify that the dashboard/chat-log status is set correctly based on risk level.
+
+    Rules under test:
+    - Low/medium-risk helpful bot answer  -> status: auto_replied, escalated: False
+    - High-risk battery/safety query      -> status: needs_escalation, escalated: True
+    - Order-specific query                -> status: needs_escalation, escalated: True (verification required)
+    - Explicit human request              -> status: needs_escalation, escalated: True
+    """
+    print("\nStarting STATUS ROUTING ASSERTIONS tests...")
+
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+
+    created_sessions = []
+
+    # Force fallback mode so test is deterministic (no live MiniMax call needed)
+    original_key = settings.MINIMAX_API_KEY
+    settings.MINIMAX_API_KEY = ""
+
+    try:
+        # ── TEST 1 ─────────────────────────────────────────────────────────────
+        # "if it stops working what do i do"
+        # Expected: helpful answer, NOT escalated, status == auto_replied
+        sid1 = f"test-route-1-{uuid.uuid4()}"
+        created_sessions.append(sid1)
+        res1 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "if it stops working what do i do",
+            "conversation_id": sid1
+        })
+        assert res1.status_code == 200, f"Test 1 chat failed: {res1.text}"
+        d1 = res1.json()
+        print(f"\n[Test 1] Query: 'if it stops working what do i do'")
+        print(f"  Reply: '{d1['reply'][:120]}'")
+        # Bot must give a helpful answer, NOT an escalation holding message
+        assert "support team has been notified" not in d1["reply"].lower(), \
+            "Test 1 FAILED: Low-risk fault query returned escalation holding message"
+        assert any(kw in d1["reply"].lower() for kw in ["charge", "flat", "contact@hoverboardstore.co.uk", "working"]), \
+            "Test 1 FAILED: No helpful content in low-risk fault reply"
+        # Verify status in database
+        conv_res1 = client.get("/api/conversations", headers=headers)
+        log1 = next((l for l in conv_res1.json().get("logs", []) if l["session_id"] == sid1), None)
+        assert log1 is not None, "Test 1 FAILED: Session not found in logs"
+        assert log1.get("escalated") is False, \
+            f"Test 1 FAILED: escalated should be False, got {log1.get('escalated')}"
+        assert log1.get("status") == "auto_replied", \
+            f"Test 1 FAILED: status should be auto_replied, got '{log1.get('status')}'"
+        print(f"  ✅ status={log1.get('status')}, escalated={log1.get('escalated')}")
+
+        # ── TEST 2 ─────────────────────────────────────────────────────────────
+        # "hoverboard not turning on"
+        # Expected: helpful troubleshooting answer, NOT escalated, status == auto_replied
+        sid2 = f"test-route-2-{uuid.uuid4()}"
+        created_sessions.append(sid2)
+        res2 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "hoverboard not turning on",
+            "conversation_id": sid2
+        })
+        assert res2.status_code == 200
+        d2 = res2.json()
+        print(f"\n[Test 2] Query: 'hoverboard not turning on'")
+        print(f"  Reply: '{d2['reply'][:120]}'")
+        assert "support team has been notified" not in d2["reply"].lower(), \
+            "Test 2 FAILED: Not-turning-on query returned escalation holding message"
+        conv_res2 = client.get("/api/conversations", headers=headers)
+        log2 = next((l for l in conv_res2.json().get("logs", []) if l["session_id"] == sid2), None)
+        assert log2 is not None
+        assert log2.get("escalated") is False, \
+            f"Test 2 FAILED: escalated should be False, got {log2.get('escalated')}"
+        assert log2.get("status") == "auto_replied", \
+            f"Test 2 FAILED: status should be auto_replied, got '{log2.get('status')}'"
+        print(f"  ✅ status={log2.get('status')}, escalated={log2.get('escalated')}")
+
+        # ── TEST 3 ─────────────────────────────────────────────────────────────
+        # "my hoverboard smells burning"
+        # Expected: immediate safety message, escalated=True, status == needs_escalation
+        sid3 = f"test-route-3-{uuid.uuid4()}"
+        created_sessions.append(sid3)
+        res3 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "my hoverboard smells burning",
+            "conversation_id": sid3
+        })
+        assert res3.status_code == 200
+        d3 = res3.json()
+        print(f"\n[Test 3] Query: 'my hoverboard smells burning'")
+        print(f"  Reply: '{d3['reply'][:120]}'")
+        assert "stop using" in d3["reply"].lower(), \
+            "Test 3 FAILED: Battery safety reply missing 'stop using'"
+        assert "flammable" in d3["reply"].lower(), \
+            "Test 3 FAILED: Battery safety reply missing 'flammable'"
+        assert "contact@hoverboardstore.co.uk" in d3["reply"].lower(), \
+            "Test 3 FAILED: Battery safety reply missing contact email"
+        conv_res3 = client.get("/api/conversations", headers=headers)
+        log3 = next((l for l in conv_res3.json().get("logs", []) if l["session_id"] == sid3), None)
+        assert log3 is not None
+        assert log3.get("escalated") is True, \
+            f"Test 3 FAILED: escalated should be True, got {log3.get('escalated')}"
+        assert log3.get("status") == "needs_escalation", \
+            f"Test 3 FAILED: status should be needs_escalation, got '{log3.get('status')}'"
+        print(f"  ✅ status={log3.get('status')}, escalated={log3.get('escalated')}")
+
+        # ── TEST 4 ─────────────────────────────────────────────────────────────
+        # "where is my order"
+        # Expected: verification request, escalated=True (requires human/Shopify lookup)
+        sid4 = f"test-route-4-{uuid.uuid4()}"
+        created_sessions.append(sid4)
+        res4 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "where is my order",
+            "conversation_id": sid4
+        })
+        assert res4.status_code == 200
+        d4 = res4.json()
+        print(f"\n[Test 4] Query: 'where is my order'")
+        print(f"  Reply: '{d4['reply'][:120]}'")
+        # Must ask for verification OR escalate — not hallucinate tracking info
+        assert any(kw in d4["reply"].lower() for kw in ["order reference", "order number", "support team", "representative"]), \
+            "Test 4 FAILED: Order query must request verification or escalate"
+        conv_res4 = client.get("/api/conversations", headers=headers)
+        log4 = next((l for l in conv_res4.json().get("logs", []) if l["session_id"] == sid4), None)
+        assert log4 is not None
+        assert log4.get("escalated") is True, \
+            f"Test 4 FAILED: escalated should be True for order query, got {log4.get('escalated')}"
+        assert log4.get("status") == "needs_escalation", \
+            f"Test 4 FAILED: status should be needs_escalation, got '{log4.get('status')}'"
+        print(f"  ✅ status={log4.get('status')}, escalated={log4.get('escalated')}")
+
+        # ── TEST 5 ─────────────────────────────────────────────────────────────
+        # "I want to speak to a person"
+        # Expected: holding escalation message, escalated=True, status == needs_escalation
+        sid5 = f"test-route-5-{uuid.uuid4()}"
+        created_sessions.append(sid5)
+        res5 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "I want to speak to a person",
+            "conversation_id": sid5
+        })
+        assert res5.status_code == 200
+        d5 = res5.json()
+        print(f"\n[Test 5] Query: 'I want to speak to a person'")
+        print(f"  Reply: '{d5['reply'][:120]}'")
+        assert "support team" in d5["reply"].lower(), \
+            "Test 5 FAILED: Human request reply must mention support team"
+        conv_res5 = client.get("/api/conversations", headers=headers)
+        log5 = next((l for l in conv_res5.json().get("logs", []) if l["session_id"] == sid5), None)
+        assert log5 is not None
+        assert log5.get("escalated") is True, \
+            f"Test 5 FAILED: escalated should be True for human request, got {log5.get('escalated')}"
+        assert log5.get("status") == "needs_escalation", \
+            f"Test 5 FAILED: status should be needs_escalation, got '{log5.get('status')}'"
+        print(f"  ✅ status={log5.get('status')}, escalated={log5.get('escalated')}")
+
+    finally:
+        settings.MINIMAX_API_KEY = original_key
+        print("\n[Cleanup] Cleaning up status routing test sessions...")
+        for sid in created_sessions:
+            try:
+                client.delete(f"/api/conversations/{sid}", headers=headers)
+            except Exception as e:
+                print(f"Failed to delete test session {sid}: {e}")
+
+    print("\nALL STATUS ROUTING ASSERTION TESTS PASSED SUCCESSFULLY! ✅")
+
 if __name__ == "__main__":
     try:
         test_integration_flow()
@@ -678,6 +847,7 @@ if __name__ == "__main__":
         test_widget_endpoint_resolution()
         test_shopify_widget_payload_variations()
         test_ai_support_agent_scenarios()
+        test_status_routing_assertions()
         sys.exit(0)
     except AssertionError as e:
         print(f"\nTEST FAILED: {e} ❌")
