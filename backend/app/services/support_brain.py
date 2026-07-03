@@ -7,46 +7,107 @@ def detect_intent_and_risk(message_text: str):
     """
     Classifies user message into predefined intents and assigns risk levels.
     Enforces rule-based checks for safety, complaints, and live human transfers.
+
+    Priority order (highest wins):
+      1. Safety danger (fire/smoke/sparks/burning/overheating/swelling/smell+device)
+      2. Explicit human agent request
+      3. Legal threat
+      4. Payment/billing issue
+      5. Order-specific action (requires account lookup)
+      6. Damaged-on-arrival
+      7. Explicit refund demand
+      8. Complaint / frustration
+      9. Standard low-risk intents (handled by chatbot)
     """
     msg = message_text.lower().strip()
-    
-    # 1. Safety hazard keywords
+
+    # ── 1. SAFETY DANGER KEYWORDS ─────────────────────────────────────────────
+    # Hard danger words — always high-risk regardless of context
     safety_danger_keywords = [
-        "smoke", "fire", "spark", "burning", "melt", "explode", "swell", "overheat", 
-        "hot", "burning smell", "sparks", "battery getting hot", "swelling", "water damage", 
-        "injury", "injured", "hurt", "damaged charger", "damaged battery"
+        "smoke", "fire", "spark", "sparks", "burning", "burning smell",
+        "melt", "melting", "explode", "explosion",
+        "swell", "swelling", "swollen", "puffed up", "puffed",
+        "overheat", "overheating", "overheated",
+        "battery getting hot", "battery is hot", "getting very hot",
+        "water damage", "water damaged",
+        "injury", "injured", "hurt",
+        "damaged charger", "damaged battery", "visible damage to charger",
     ]
     has_safety_danger = any(kw in msg for kw in safety_danger_keywords)
-    
-    # 2. Legal threat keywords
-    legal_keywords = ["sue", "legal", "lawyer", "court", "ombudsman", "trading standards", "solicitor", "action"]
-    has_legal_threat = any(kw in msg for kw in legal_keywords)
-    
-    # 3. Payment/billing keywords
-    payment_keywords = ["chargeback", "stripe", "paypal", "double charge", "billing", "card declined", "payment failed", "checkout error"]
-    has_payment_issue = any(kw in msg for kw in payment_keywords)
-    
-    # 4. Human transfer intent
-    human_keywords = ["speak to a person", "human please", "speak to someone", "agent please", "real person", "customer service", "support team", "live agent", "talk to human", "representative"]
+
+    # Contextual smell check: "smell"/"smelling"/"smells" are a safety risk ONLY
+    # when a device/product word is also present in the same message.
+    # Standalone "it smells" is ambiguous but with device context it is high-risk.
+    if not has_safety_danger:
+        smell_words = ["smell", "smells", "smelling", "smelly", "odour", "odor", "strange smell", "funny smell"]
+        device_words = [
+            "hoverboard", "scooter", "battery", "charger", "charging",
+            "board", "device", "product", "it"
+        ]
+        has_smell = any(sw in msg for sw in smell_words)
+        has_device = any(dw in msg for dw in device_words)
+        if has_smell and has_device:
+            has_safety_danger = True
+
+    # ── 2. HUMAN TRANSFER INTENT ──────────────────────────────────────────────
+    # Catches natural customer phrasing for requesting a human agent.
+    # Checked AFTER safety so a message like "need agent, my board is smoking"
+    # still routes as battery_safety (safety wins for intent).
+    human_keywords = [
+        # Explicit agent/person requests
+        "speak to a person", "speak to someone", "talk to a person", "talk to someone",
+        "talk to human", "talk to an agent", "talk to agent",
+        "need an agent", "need agent", "need a human", "need human",
+        "need a person", "need someone",
+        "want to talk to", "want to speak to",
+        "i need to speak", "i want to speak",
+        # Agent/person labels
+        "real person", "actual person", "human please", "human support",
+        "agent please", "live agent", "support agent",
+        "customer service", "support team",
+        # Representative / adviser / advisor
+        "representative", "adviser", "advisor",
+        # Direct phrasing
+        "speak with someone", "speak with a person",
+        "connect me to", "transfer me to",
+        "escalate", "escalate this",
+    ]
     is_human_request = any(kw in msg for kw in human_keywords)
-    
-    # 5. Order-specific or private account actions
+
+    # ── 3. LEGAL THREAT ───────────────────────────────────────────────────────
+    legal_keywords = [
+        "sue", "legal", "lawyer", "court", "ombudsman",
+        "trading standards", "solicitor", "legal action",
+    ]
+    has_legal_threat = any(kw in msg for kw in legal_keywords)
+
+    # ── 4. PAYMENT / BILLING ──────────────────────────────────────────────────
+    payment_keywords = [
+        "chargeback", "stripe", "paypal", "double charge", "billing",
+        "card declined", "payment failed", "checkout error",
+    ]
+    has_payment_issue = any(kw in msg for kw in payment_keywords)
+
+    # ── 5. ORDER-SPECIFIC ACTIONS (requires account lookup) ───────────────────
     order_actions = [
-        "where is my order", "track", "tracking", "order status", "delivery status", 
+        "where is my order", "track", "tracking", "order status", "delivery status",
         "haven't received", "parcel status", "when will it arrive", "delivered but not received",
-        "cancel my order", "cancel order", "cancellation", "change address", "change shipping address",
-        "refund approval", "replacement approval", "refund request", "replace my"
+        "cancel my order", "cancel order", "cancellation",
+        "change address", "change shipping address",
+        "refund approval", "replacement approval", "refund request", "replace my",
     ]
     is_order_specific = any(kw in msg for kw in order_actions)
-    
+
+    # ── INTENT + RISK ASSIGNMENT (priority order) ─────────────────────────────
     intent = "unknown"
     risk_level = "low"
-    
-    if is_human_request:
-        intent = "speak_to_human"
-        risk_level = "high"
-    elif has_safety_danger:
+
+    # Safety always wins — even if the customer also requested a human agent
+    if has_safety_danger:
         intent = "battery_safety"
+        risk_level = "high"
+    elif is_human_request:
+        intent = "speak_to_human"
         risk_level = "high"
     elif has_legal_threat:
         intent = "complaint"
@@ -57,42 +118,61 @@ def detect_intent_and_risk(message_text: str):
     elif is_order_specific:
         intent = "order_issue"
         risk_level = "high"
-    elif any(kw in msg for kw in ["dead on arrival", "arrived damaged", "arrived broken", "damaged on arrival", "box was damaged"]):
-        # Only escalate when item arrived damaged from courier — requires order verification
+    elif any(kw in msg for kw in [
+        "dead on arrival", "arrived damaged", "arrived broken",
+        "damaged on arrival", "box was damaged",
+    ]):
         intent = "damaged_on_arrival"
         risk_level = "high"
-    elif any(kw in msg for kw in ["refund approval", "refund my money", "charge back", "chargeback"]):
-        # Only escalate explicit refund approval demands — not "can I get a refund" (policy question)
+    elif any(kw in msg for kw in [
+        "refund approval", "refund my money", "charge back", "chargeback",
+    ]):
         intent = "refund_request"
         risk_level = "high"
-    elif any(kw in msg for kw in ["angry", "upset", "complaint", "complain", "scam", "rip off", "waste of money", "useless", "terrible", "worst"]):
+    elif any(kw in msg for kw in [
+        "angry", "upset", "complaint", "complain", "scam",
+        "rip off", "waste of money", "useless", "terrible", "worst",
+    ]):
         intent = "complaint"
         risk_level = "high"
-        
-    # If not classified as high-risk, determine standard intent
+
+    # ── STANDARD LOW-RISK INTENTS (only reached when risk_level is still 'low') ─
     if intent == "unknown":
-        if any(kw in msg for kw in ["delivery", "shipping", "shipment", "dispatch", "how long is delivery", "how long to ship", "postage"]):
+        if any(kw in msg for kw in [
+            "delivery", "shipping", "shipment", "dispatch",
+            "how long is delivery", "how long to ship", "postage",
+        ]):
             intent = "shipping_times"
-        elif any(kw in msg for kw in ["return", "returns", "exchange", "refund policy", "return policy"]):
+        elif any(kw in msg for kw in [
+            "return", "returns", "exchange", "refund policy", "return policy",
+        ]):
             intent = "return_policy"
         elif any(kw in msg for kw in ["battery", "charge", "charger", "overcharge"]):
             if "safety" in msg or "safe" in msg:
                 intent = "battery_safety"
             else:
                 intent = "charging_problem"
-        elif any(kw in msg for kw in ["reset", "calibrate", "calibration", "beeping", "flash", "flashing", "red light"]):
+        elif any(kw in msg for kw in [
+            "reset", "calibrate", "calibration", "beeping", "flash", "flashing", "red light",
+        ]):
             intent = "reset_help"
-        elif any(kw in msg for kw in ["recommendation", "recommend", "best", "which", "buy", "suggest"]):
-            intent = "product_recommendation"
-        elif any(kw in msg for kw in ["year old", "age", "suitable", "kids", "children", "years old"]):
+        elif any(kw in msg for kw in [
+            "year old", "age", "suitable", "kids", "children", "years old",
+        ]):
             intent = "age_suitability"
-        elif any(kw in msg for kw in ["discount", "coupon", "code", "promo", "voucher", "deal", "signup"]):
+        elif any(kw in msg for kw in [
+            "recommendation", "recommend", "best", "which", "buy", "suggest",
+        ]):
+            intent = "product_recommendation"
+        elif any(kw in msg for kw in [
+            "discount", "coupon", "code", "promo", "voucher", "deal", "signup",
+        ]):
             intent = "discount_question"
         elif any(kw in msg for kw in ["warranty", "guarantee"]):
             intent = "warranty_question"
-            
-    # Escalate if risk level is high or explicit human request, otherwise allow chatbot auto-answering
-    if risk_level == "high" or intent == "speak_to_human":
+
+    # ── ESCALATION DECISION ───────────────────────────────────────────────────
+    if risk_level == "high":
         escalate = True
         escalation_reason = f"High risk query ({intent}) requires support agent review"
     else:

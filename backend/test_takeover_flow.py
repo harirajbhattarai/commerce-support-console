@@ -827,6 +827,117 @@ def test_status_routing_assertions():
             f"Test 5 FAILED: status should be needs_escalation, got '{log5.get('status')}'"
         print(f"  ✅ status={log5.get('status')}, escalated={log5.get('escalated')}")
 
+        # ── TEST 6 ─────────────────────────────────────────────────────────────
+        # "Return policy"
+        # Expected: helpful policy answer, NOT escalated, status == auto_replied
+        sid6 = f"test-route-6-{uuid.uuid4()}"
+        created_sessions.append(sid6)
+        res6 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Return policy",
+            "conversation_id": sid6
+        })
+        assert res6.status_code == 200
+        d6 = res6.json()
+        print(f"\n[Test 6] Query: 'Return policy'")
+        print(f"  Reply: '{d6['reply'][:120]}'")
+        assert "support team has been notified" not in d6["reply"].lower(), \
+            "Test 6 FAILED: Return policy query returned escalation holding message"
+        assert any(kw in d6["reply"].lower() for kw in ["return", "refund", "30", "packaging", "contact@"]), \
+            "Test 6 FAILED: Return policy reply missing return/refund content"
+        conv_res6 = client.get("/api/conversations", headers=headers)
+        log6 = next((l for l in conv_res6.json().get("logs", []) if l["session_id"] == sid6), None)
+        assert log6 is not None, "Test 6 FAILED: Session not found in logs"
+        assert log6.get("escalated") is False, \
+            f"Test 6 FAILED: escalated should be False, got {log6.get('escalated')}"
+        assert log6.get("status") in ("auto_replied", "new"), \
+            f"Test 6 FAILED: status should be auto_replied, got '{log6.get('status')}'"
+        print(f"  ✅ status={log6.get('status')}, escalated={log6.get('escalated')}")
+
+        # ── TEST 7 ─────────────────────────────────────────────────────────────
+        # "i need agent to talk cause my hoverboard is smelling"
+        # SAFETY WINS over human request: battery_safety intent, escalated=True
+        sid7 = f"test-route-7-{uuid.uuid4()}"
+        created_sessions.append(sid7)
+        res7 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "i need agent to talk cause my hoverboard is smelling",
+            "conversation_id": sid7
+        })
+        assert res7.status_code == 200
+        d7 = res7.json()
+        print(f"\n[Test 7] Query: 'i need agent to talk cause my hoverboard is smelling'")
+        print(f"  Reply: '{d7['reply'][:120]}'")
+        assert "stop using" in d7["reply"].lower(), \
+            "Test 7 FAILED: Safety+human request reply must include 'stop using'"
+        assert "flammable" in d7["reply"].lower(), \
+            "Test 7 FAILED: Safety+human request reply must mention 'flammable'"
+        assert "contact@hoverboardstore.co.uk" in d7["reply"].lower(), \
+            "Test 7 FAILED: Safety reply must include contact email"
+        conv_res7 = client.get("/api/conversations", headers=headers)
+        log7 = next((l for l in conv_res7.json().get("logs", []) if l["session_id"] == sid7), None)
+        assert log7 is not None, "Test 7 FAILED: Session not found in logs"
+        assert log7.get("escalated") is True, \
+            f"Test 7 FAILED: escalated should be True (safety+human), got {log7.get('escalated')}"
+        assert log7.get("status") == "needs_escalation", \
+            f"Test 7 FAILED: status should be needs_escalation, got '{log7.get('status')}'"
+        # Intent must be battery_safety, not speak_to_human (safety wins).
+        # get_conversations() extracts intent into log["intent"] — use it directly.
+        intent7 = log7.get("intent", "")
+        assert intent7 == "battery_safety", \
+            f"Test 7 FAILED: intent should be battery_safety (safety wins over human_request), got '{intent7}'"
+        print(f"  ✅ status={log7.get('status')}, escalated={log7.get('escalated')}, intent={intent7}")
+
+        # ── TEST 8 ─────────────────────────────────────────────────────────────
+        # "i want to talk to adviser"
+        # Expected: speak_to_human intent, escalated=True, status == needs_escalation
+        sid8 = f"test-route-8-{uuid.uuid4()}"
+        created_sessions.append(sid8)
+        res8 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "i want to talk to adviser",
+            "conversation_id": sid8
+        })
+        assert res8.status_code == 200
+        d8 = res8.json()
+        print(f"\n[Test 8] Query: 'i want to talk to adviser'")
+        print(f"  Reply: '{d8['reply'][:120]}'")
+        assert "support team" in d8["reply"].lower() or "representative" in d8["reply"].lower(), \
+            "Test 8 FAILED: Adviser request reply must mention support team or representative"
+        conv_res8 = client.get("/api/conversations", headers=headers)
+        log8 = next((l for l in conv_res8.json().get("logs", []) if l["session_id"] == sid8), None)
+        assert log8 is not None, "Test 8 FAILED: Session not found in logs"
+        assert log8.get("escalated") is True, \
+            f"Test 8 FAILED: escalated should be True for adviser request, got {log8.get('escalated')}"
+        assert log8.get("status") == "needs_escalation", \
+            f"Test 8 FAILED: status should be needs_escalation, got '{log8.get('status')}'"
+        print(f"  ✅ status={log8.get('status')}, escalated={log8.get('escalated')}")
+
+        # ── TEST 9 ─────────────────────────────────────────────────────────────
+        # "which hoverboard is good for 9 year old"
+        # Expected: helpful age/recommendation answer, NOT escalated, status == auto_replied
+        sid9 = f"test-route-9-{uuid.uuid4()}"
+        created_sessions.append(sid9)
+        res9 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "which hoverboard is good for 9 year old",
+            "conversation_id": sid9
+        })
+        assert res9.status_code == 200
+        d9 = res9.json()
+        print(f"\n[Test 9] Query: 'which hoverboard is good for 9 year old'")
+        print(f"  Reply: '{d9['reply'][:120]}'")
+        assert "support team has been notified" not in d9["reply"].lower(), \
+            "Test 9 FAILED: Age/recommendation query returned escalation holding message"
+        conv_res9 = client.get("/api/conversations", headers=headers)
+        log9 = next((l for l in conv_res9.json().get("logs", []) if l["session_id"] == sid9), None)
+        assert log9 is not None, "Test 9 FAILED: Session not found in logs"
+        assert log9.get("escalated") is False, \
+            f"Test 9 FAILED: escalated should be False for age query, got {log9.get('escalated')}"
+        assert log9.get("status") in ("auto_replied", "new"), \
+            f"Test 9 FAILED: status should be auto_replied, got '{log9.get('status')}'"
+        print(f"  ✅ status={log9.get('status')}, escalated={log9.get('escalated')}")
+
     finally:
         settings.MINIMAX_API_KEY = original_key
         print("\n[Cleanup] Cleaning up status routing test sessions...")
@@ -837,6 +948,81 @@ def test_status_routing_assertions():
                 print(f"Failed to delete test session {sid}: {e}")
 
     print("\nALL STATUS ROUTING ASSERTION TESTS PASSED SUCCESSFULLY! ✅")
+
+
+def test_intent_detection_unit():
+    """
+    Pure unit test for detect_intent_and_risk() — no HTTP, no DB required.
+
+    Validates the intent priority order and keyword expansions:
+    - Safety danger words and contextual smell+device detection
+    - Human agent request phrasing variants
+    - Safety wins when both safety and human_request are present
+    - Low-risk intents correctly remain as auto_replied
+    """
+    from app.services.support_brain import detect_intent_and_risk
+    print("\nStarting INTENT DETECTION UNIT TESTS...")
+
+    cases = [
+        # (description, message, expected_intent, expected_escalate)
+        # ── SAFETY: hard keywords ───────────────────────────────────────────
+        ("smoke keyword",             "my hoverboard has smoke coming out", "battery_safety", True),
+        ("burning keyword",           "my hoverboard smells burning",        "battery_safety", True),
+        ("sparks keyword",            "there are sparks from my charger",    "battery_safety", True),
+        ("overheating keyword",       "the battery is overheating badly",    "battery_safety", True),
+        ("swollen keyword",           "the battery looks swollen",           "battery_safety", True),
+
+        # ── SAFETY: contextual smell + device ──────────────────────────────
+        ("smell + hoverboard",        "my hoverboard is smelling",           "battery_safety", True),
+        ("smells + scooter",          "the scooter smells weird",            "battery_safety", True),
+        ("smelling + charger",        "charger is smelling strange",         "battery_safety", True),
+        ("smells + it context",       "it smells really bad when charging",  "battery_safety", True),
+
+        # ── HUMAN REQUEST: new phrasing variants ────────────────────────────
+        ("need agent",                "i need agent to help me",             "speak_to_human",  True),
+        ("need an agent",             "i need an agent please",              "speak_to_human",  True),
+        ("talk to agent",             "i want to talk to agent",             "speak_to_human",  True),
+        ("talk to adviser",           "i want to talk to adviser",           "speak_to_human",  True),
+        ("talk to advisor",           "can i talk to advisor",               "speak_to_human",  True),
+        ("representative",            "can i speak to a representative",     "speak_to_human",  True),
+        ("existing: speak to person", "I want to speak to a person",        "speak_to_human",  True),
+
+        # ── SAFETY WINS OVER HUMAN REQUEST ─────────────────────────────────
+        ("smell+need agent: safety wins",
+         "i need agent to talk cause my hoverboard is smelling",
+         "battery_safety", True),
+        ("burning+speak to person: safety wins",
+         "it is burning can i speak to a person",
+         "battery_safety", True),
+
+        # ── LOW-RISK: must NOT escalate ─────────────────────────────────────
+        ("return policy",             "Return policy",                       "return_policy",         False),
+        ("age suitability",           "which hoverboard is good for 9 year old", "age_suitability",  False),
+        ("stops working (no danger)", "if it stops working what do i do",   "unknown",               False),
+        ("warranty question",         "what is the warranty on this",        "warranty_question",     False),
+        ("shipping question",         "how long does delivery take",         "shipping_times",        False),
+    ]
+
+    passed = 0
+    failed = 0
+    for desc, msg, exp_intent, exp_escalate in cases:
+        intent, risk_level, escalate, reason = detect_intent_and_risk(msg)
+        ok_intent = (intent == exp_intent)
+        ok_escalate = (escalate == exp_escalate)
+        if ok_intent and ok_escalate:
+            print(f"  ✅ [{desc}] intent={intent}, escalate={escalate}")
+            passed += 1
+        else:
+            issues = []
+            if not ok_intent:
+                issues.append(f"intent={intent} (expected {exp_intent})")
+            if not ok_escalate:
+                issues.append(f"escalate={escalate} (expected {exp_escalate})")
+            print(f"  ❌ [{desc}] FAIL: {', '.join(issues)} | msg='{msg}'")
+            failed += 1
+
+    assert failed == 0, f"INTENT DETECTION UNIT TESTS: {failed} case(s) FAILED (see above)"
+    print(f"\nALL {passed} INTENT DETECTION UNIT TESTS PASSED SUCCESSFULLY! ✅")
 
 def test_staging_demo_widget_config():
     print("\nStarting integration test for staging demo widget configuration...")
@@ -909,6 +1095,7 @@ if __name__ == "__main__":
         test_widget_endpoint_resolution()
         test_shopify_widget_payload_variations()
         test_ai_support_agent_scenarios()
+        test_intent_detection_unit()
         test_status_routing_assertions()
         test_staging_demo_widget_config()
         sys.exit(0)

@@ -1558,7 +1558,7 @@
           } else if (activeStatusFilter === "resolved") {
             if (session.status !== "resolved") return false;
           } else if (activeStatusFilter === "auto-replied") {
-            if (session.status !== "new") return false;
+            if (session.status !== "auto_replied") return false;
           } else if (activeStatusFilter === "archived") {
             if (session.status !== "archived") return false;
           }
@@ -1621,7 +1621,7 @@
           if (session.status === "needs_escalation") countNeedsAgent++;
           else if (session.status === "in_progress") countInProgress++;
           else if (session.status === "resolved") countResolved++;
-          else if (session.status === "new") countAutoReplied++;
+          else if (session.status === "auto_replied" || session.status === "new") countAutoReplied++;
         });
 
         // Update DOM count elements for tabs
