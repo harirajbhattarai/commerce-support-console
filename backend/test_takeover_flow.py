@@ -950,6 +950,225 @@ def test_status_routing_assertions():
     print("\nALL STATUS ROUTING ASSERTION TESTS PASSED SUCCESSFULLY! ✅")
 
 
+def test_multiturn_escalation_upgrade():
+    """
+    Verifies that if any message in a session triggers escalation, the entire
+    session's effective_status is upgraded to needs_escalation — even if earlier
+    turns were auto_replied.
+
+    Rules under test:
+    - needs_escalation always wins over auto_replied (priority hierarchy)
+    - A later escalating message in the same session upgrades the whole session
+    - Auto_replied sessions cannot hold escalated=True
+
+    Scenarios:
+    1. "Return policy"  →  auto_replied
+       then: "i need agent to talk cause my hoverboard is smelling"
+       Final session:  needs_escalation, escalated=True
+
+    2. "my hoverboard is not working"  →  auto_replied
+       then: "actually it smells burning"
+       Final session:  needs_escalation, escalated=True
+
+    3. "which hoverboard is good for 9 year old"  →  auto_replied
+       then: "I want to talk to adviser"
+       Final session:  needs_escalation, escalated=True
+
+    4. Direct first message: "I need talk with advisor"
+       Final session:  needs_escalation, escalated=True
+
+    5. Direct first message: "my hoverboard smells burning"
+       Final session:  needs_escalation, escalated=True
+    """
+    print("\nStarting MULTI-TURN ESCALATION UPGRADE TESTS...")
+
+    admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"
+    if not settings.ADMIN_DASHBOARD_TOKEN:
+        settings.ADMIN_DASHBOARD_TOKEN = admin_token
+    headers = {"X-Admin-Token": admin_token}
+
+    # Force fallback mode — deterministic, no live MiniMax needed
+    original_key = settings.MINIMAX_API_KEY
+    settings.MINIMAX_API_KEY = ""
+
+    created_sessions = []
+
+    def get_session_log(session_id):
+        """Fetch all chat_logs rows for a session and return the highest-priority one."""
+        res = client.get("/api/conversations", headers=headers)
+        assert res.status_code == 200, f"Could not fetch conversations: {res.text}"
+        logs = res.json().get("logs", [])
+        session_rows = [l for l in logs if l["session_id"] == session_id]
+        if not session_rows:
+            return None
+        # Simulate the priority-upgrade logic — return the highest-priority status
+        PRIORITY = {"new": 0, "auto_replied": 1, "resolved": 2,
+                    "in_progress": 3, "needs_escalation": 4}
+        best = session_rows[0]
+        for row in session_rows[1:]:
+            if PRIORITY.get(row.get("status", "new"), 0) > PRIORITY.get(best.get("status", "new"), 0):
+                best = row
+            if row.get("escalated"):
+                best["escalated"] = True
+        return best
+
+    try:
+        # ── SCENARIO 1 ────────────────────────────────────────────────────────────
+        # Turn 1 auto_replied, Turn 2 safety+human → must upgrade to needs_escalation
+        sid1 = f"test-mt-1-{uuid.uuid4()}"
+        created_sessions.append(sid1)
+
+        # Turn 1: low-risk
+        r1a = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "Return policy",
+            "conversation_id": sid1
+        })
+        assert r1a.status_code == 200, f"Scenario 1 Turn 1 failed: {r1a.text}"
+        print(f"\n[Scenario 1] Turn 1 'Return policy' reply: '{r1a.json()['reply'][:80]}'")
+
+        # Turn 2: safety escalation
+        r1b = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "i need agent to talk cause my hoverboard is smelling",
+            "conversation_id": sid1
+        })
+        assert r1b.status_code == 200, f"Scenario 1 Turn 2 failed: {r1b.text}"
+        print(f"[Scenario 1] Turn 2 'smelling' reply: '{r1b.json()['reply'][:80]}'")
+        assert "stop using" in r1b.json()["reply"].lower(), \
+            "Scenario 1 Turn 2: expected safety reply with 'stop using'"
+
+        # Verify final session state
+        log1 = get_session_log(sid1)
+        assert log1 is not None, "Scenario 1: session not found in logs"
+        assert log1.get("escalated") is True, \
+            f"Scenario 1 FAILED: escalated should be True, got {log1.get('escalated')}"
+        assert log1.get("status") == "needs_escalation", \
+            f"Scenario 1 FAILED: status should be needs_escalation, got '{log1.get('status')}'"
+        print(f"  ✅ Scenario 1: status={log1.get('status')}, escalated={log1.get('escalated')}")
+
+        # ── SCENARIO 2 ────────────────────────────────────────────────────────────
+        # Turn 1 troubleshooting auto_replied, Turn 2 burning smell → needs_escalation
+        sid2 = f"test-mt-2-{uuid.uuid4()}"
+        created_sessions.append(sid2)
+
+        r2a = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "my hoverboard is not working",
+            "conversation_id": sid2
+        })
+        assert r2a.status_code == 200, f"Scenario 2 Turn 1 failed: {r2a.text}"
+        print(f"\n[Scenario 2] Turn 1 'not working' reply: '{r2a.json()['reply'][:80]}'")
+        assert "support team has been notified" not in r2a.json()["reply"].lower(), \
+            "Scenario 2 Turn 1: should NOT escalate 'not working' on its own"
+
+        r2b = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "actually it smells burning",
+            "conversation_id": sid2
+        })
+        assert r2b.status_code == 200, f"Scenario 2 Turn 2 failed: {r2b.text}"
+        print(f"[Scenario 2] Turn 2 'smells burning' reply: '{r2b.json()['reply'][:80]}'")
+        assert "stop using" in r2b.json()["reply"].lower(), \
+            "Scenario 2 Turn 2: expected safety reply with 'stop using'"
+
+        log2 = get_session_log(sid2)
+        assert log2 is not None, "Scenario 2: session not found in logs"
+        assert log2.get("escalated") is True, \
+            f"Scenario 2 FAILED: escalated should be True, got {log2.get('escalated')}"
+        assert log2.get("status") == "needs_escalation", \
+            f"Scenario 2 FAILED: status should be needs_escalation, got '{log2.get('status')}'"
+        print(f"  ✅ Scenario 2: status={log2.get('status')}, escalated={log2.get('escalated')}")
+
+        # ── SCENARIO 3 ────────────────────────────────────────────────────────────
+        # Turn 1 age suitability auto_replied, Turn 2 explicit adviser request → needs_escalation
+        sid3 = f"test-mt-3-{uuid.uuid4()}"
+        created_sessions.append(sid3)
+
+        r3a = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "which hoverboard is good for 9 year old",
+            "conversation_id": sid3
+        })
+        assert r3a.status_code == 200, f"Scenario 3 Turn 1 failed: {r3a.text}"
+        print(f"\n[Scenario 3] Turn 1 'age suitability' reply: '{r3a.json()['reply'][:80]}'")
+        assert "support team has been notified" not in r3a.json()["reply"].lower(), \
+            "Scenario 3 Turn 1: should NOT escalate age question"
+
+        r3b = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "I want to talk to adviser",
+            "conversation_id": sid3
+        })
+        assert r3b.status_code == 200, f"Scenario 3 Turn 2 failed: {r3b.text}"
+        print(f"[Scenario 3] Turn 2 'adviser' reply: '{r3b.json()['reply'][:80]}'")
+        assert "support team" in r3b.json()["reply"].lower() or "representative" in r3b.json()["reply"].lower(), \
+            "Scenario 3 Turn 2: expected human handoff reply"
+
+        log3 = get_session_log(sid3)
+        assert log3 is not None, "Scenario 3: session not found in logs"
+        assert log3.get("escalated") is True, \
+            f"Scenario 3 FAILED: escalated should be True, got {log3.get('escalated')}"
+        assert log3.get("status") == "needs_escalation", \
+            f"Scenario 3 FAILED: status should be needs_escalation, got '{log3.get('status')}'"
+        print(f"  ✅ Scenario 3: status={log3.get('status')}, escalated={log3.get('escalated')}")
+
+        # ── SCENARIO 4 ────────────────────────────────────────────────────────────
+        # Direct first message: human request phrasing variant
+        sid4 = f"test-mt-4-{uuid.uuid4()}"
+        created_sessions.append(sid4)
+
+        r4 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "I need talk with advisor",
+            "conversation_id": sid4
+        })
+        assert r4.status_code == 200, f"Scenario 4 failed: {r4.text}"
+        print(f"\n[Scenario 4] 'I need talk with advisor' reply: '{r4.json()['reply'][:80]}'")
+
+        log4 = get_session_log(sid4)
+        assert log4 is not None, "Scenario 4: session not found in logs"
+        assert log4.get("escalated") is True, \
+            f"Scenario 4 FAILED: escalated should be True, got {log4.get('escalated')}"
+        assert log4.get("status") == "needs_escalation", \
+            f"Scenario 4 FAILED: status should be needs_escalation, got '{log4.get('status')}'"
+        print(f"  ✅ Scenario 4: status={log4.get('status')}, escalated={log4.get('escalated')}")
+
+        # ── SCENARIO 5 ────────────────────────────────────────────────────────────
+        # Direct first message: safety issue
+        sid5 = f"test-mt-5-{uuid.uuid4()}"
+        created_sessions.append(sid5)
+
+        r5 = client.post("/api/chat", json={
+            "store_id": "hoverboard_store",
+            "message": "my hoverboard smells burning",
+            "conversation_id": sid5
+        })
+        assert r5.status_code == 200, f"Scenario 5 failed: {r5.text}"
+        print(f"\n[Scenario 5] 'smells burning' reply: '{r5.json()['reply'][:80]}'")
+        assert "stop using" in r5.json()["reply"].lower(), \
+            "Scenario 5: expected safety reply"
+
+        log5 = get_session_log(sid5)
+        assert log5 is not None, "Scenario 5: session not found in logs"
+        assert log5.get("escalated") is True, \
+            f"Scenario 5 FAILED: escalated should be True, got {log5.get('escalated')}"
+        assert log5.get("status") == "needs_escalation", \
+            f"Scenario 5 FAILED: status should be needs_escalation, got '{log5.get('status')}'"
+        print(f"  ✅ Scenario 5: status={log5.get('status')}, escalated={log5.get('escalated')}")
+
+    finally:
+        settings.MINIMAX_API_KEY = original_key
+        print("\n[Cleanup] Removing multi-turn escalation test sessions...")
+        for sid in created_sessions:
+            try:
+                client.delete(f"/api/conversations/{sid}", headers=headers)
+            except Exception as e:
+                print(f"  Failed to delete {sid}: {e}")
+
+    print("\nALL MULTI-TURN ESCALATION UPGRADE TESTS PASSED SUCCESSFULLY! ✅")
+
+
 def test_intent_detection_unit():
     """
     Pure unit test for detect_intent_and_risk() — no HTTP, no DB required.
@@ -1097,6 +1316,7 @@ if __name__ == "__main__":
         test_ai_support_agent_scenarios()
         test_intent_detection_unit()
         test_status_routing_assertions()
+        test_multiturn_escalation_upgrade()
         test_staging_demo_widget_config()
         sys.exit(0)
     except AssertionError as e:

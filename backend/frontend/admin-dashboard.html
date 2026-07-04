@@ -1387,52 +1387,80 @@
         }
       }
 
+      // Status priority ranking — higher index = higher priority.
+      // needs_escalation always wins; auto_replied cannot overwrite needs_escalation.
+      const STATUS_PRIORITY = {
+        "new":              0,
+        "auto_replied":     1,
+        "resolved":         2,
+        "in_progress":      3,
+        "needs_escalation": 4,
+        "archived":         -1  // archived is isolated; never upgrades other statuses
+      };
+
+      // Returns the higher-priority status of the two.
+      function upgradeStatus(current, incoming) {
+        // archived is a manual override — do not let it win over real statuses
+        if (incoming === "archived") return current;
+        if (current === "archived") return current;
+        const pCurrent  = STATUS_PRIORITY[current]  ?? 0;
+        const pIncoming = STATUS_PRIORITY[incoming] ?? 0;
+        return pIncoming > pCurrent ? incoming : current;
+      }
+
       // Process raw log list into sessions map
       function processLogs(logs, agentReplies = []) {
         sessions = {};
-        
-        // logs come ordered by created_at desc (newest first). Let's process them.
+
+        // logs come ordered by created_at desc (newest first).
         logs.forEach(log => {
           const sId = log.session_id;
+
+          // Determine this row's effective status — escalated rows are always needs_escalation.
+          const rowStatus = log.escalated
+            ? "needs_escalation"
+            : (log.status || "new");
+
           if (!sessions[sId]) {
             sessions[sId] = {
-              session_id: sId,
-              store_id: log.store_id,
-              channel: log.channel || "shopify_widget",
-              created_at: log.created_at,
-              escalated: log.escalated || false,
-              status: log.status || (log.escalated ? "needs_escalation" : "new"),
-              last_message: log.user_message, // Newest turn since raw query order is DESC
-              messages: []
+              session_id:   sId,
+              store_id:     log.store_id,
+              channel:      log.channel || "shopify_widget",
+              created_at:   log.created_at,
+              escalated:    log.escalated || false,
+              status:       rowStatus,
+              last_message: log.user_message, // newest turn (DESC order)
+              messages:     []
             };
           }
-          
-          // Latest log contains the newest status because of DESC ordering
-          if (log.status) {
-            sessions[sId].status = log.status;
-          }
+
+          // Priority-upgrade the session status — needs_escalation can never be
+          // downgraded to auto_replied by a later (older) non-escalated row.
+          sessions[sId].status = upgradeStatus(sessions[sId].status, rowStatus);
+
+          // Escalation is sticky — once true it cannot go back to false.
           if (log.escalated) {
             sessions[sId].escalated = true;
           }
-          
-          // Reconstruct individual messages for the chat history container
+
+          // Reconstruct individual messages for the chat history container.
           sessions[sId].messages.push(
             {
-              sender: "user",
-              content: log.user_message,
+              sender:     "user",
+              content:    log.user_message,
               created_at: log.created_at
             },
             {
-              sender: "bot",
-              content: log.assistant_message,
-              matched_source: log.matched_source,
-              confidence: log.confidence,
-              brain_mode: log.brain_mode || "rules",
-              intent: log.intent || "unknown",
+              sender:           "bot",
+              content:          log.assistant_message,
+              matched_source:   log.matched_source,
+              confidence:       log.confidence,
+              brain_mode:       log.brain_mode || "rules",
+              intent:           log.intent    || "unknown",
               escalation_reason: log.escalation_reason || "",
-              escalated: log.escalated,
-              status: log.status,
-              created_at: log.created_at
+              escalated:        log.escalated,
+              status:           rowStatus,
+              created_at:       log.created_at
             }
           );
         });

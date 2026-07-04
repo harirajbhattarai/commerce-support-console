@@ -581,12 +581,20 @@ async def get_conversations(store_id: Optional[str] = None):
                         log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
                         log["escalation_reason"] = meta.get("escalation_reason", "")
                         # Surface effective_status from metadata so dashboard shows
-                        # auto_replied correctly (DB column is constrained to 'new')
+                        # auto_replied correctly (DB column is constrained to 'new').
+                        # Guard: only apply the auto_replied override when the row is
+                        # genuinely not escalated — never allow auto_replied to overwrite
+                        # a row that has escalated=True.
                         effective = meta.get("effective_status")
                         if effective and log.get("status") == "new" and not log.get("escalated"):
                             log["status"] = effective
                 except json.JSONDecodeError:
                     pass
+
+            # Safety guardrail: a row marked escalated=True in the DB must always
+            # surface as needs_escalation regardless of what metadata says.
+            if log.get("escalated") and log.get("status") not in ("needs_escalation", "in_progress", "resolved", "archived"):
+                log["status"] = "needs_escalation"
 
         # Fetch all agent replies
         replies_res = supabase_client.table("agent_replies").select("*").order("created_at", desc=True).execute()
