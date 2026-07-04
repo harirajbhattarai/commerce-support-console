@@ -38,7 +38,10 @@
 | 1.8 | Full integration test suite passes on staging | `./venv/bin/python test_takeover_flow.py` | ✅ |
 | 1.9 | Low-risk helpful bot answers saved with `auto_replied` status (not `needs_escalation`) | Test suite + Supabase query | ✅ |
 
-**Phase 1 Overall**: ✅ Complete.
+**Phase 1 Overall**: ❌ Reopened. Phase 1 remains open pending the routing/retrieval foundation correction outlined in `PHASE1_ROUTING_RETRIEVAL_ROOT_CAUSE_AUDIT.md`.
+
+> [!WARNING]
+> Foundational refactor required to separate intent understanding (LLM structured output) from retrieval. Keyword-guessing approach has failed safety and product entity gates.
 
 > [!NOTE]
 > The 204-question evaluation dataset (`customer_question_dataset_v2.json`) exists and covers 24 intents.
