@@ -391,102 +391,125 @@ async def chat_endpoint(request: ChatRequest):
         reply = "Our support team has been notified and a representative will reply here shortly."
         source_used = "Staff Takeover Active (Waiting for support representative)"
     else:
-        # Check standard chat flow using Support Brain
-        # 1. Simple Keyword Match in Supabase DB first, then local JSON
-        matched_content = None
-        matched_title = None
+        # --- BATCH 1: Deterministic Pre-LLM Gates ---
+        from app.services.intent_router import normalize_message, hard_safety_gate, hard_human_handoff_gate
+        normalized_data = normalize_message(request.message)
         
-        if supabase_client:
-            try:
-                from app.services.knowledge_service import KnowledgeService
-                ret_res = await KnowledgeService.get_support_knowledge(
-                    query=request.message,
-                    store_id=store_id
-                )
-                if ret_res.get("success"):
-                    k_list = ret_res.get("knowledge", [])
-                    a_list = ret_res.get("articles", [])
-                    match = rank_knowledge_matches(request.message, k_list, a_list)
-                    if match:
-                        matched_content, matched_title = match
-            except Exception as db_kb_err:
-                print(f"Error searching Supabase knowledge: {db_kb_err}")
-                
-        # Local JSON fallback matching
-        if not matched_content:
-            message_words = [word.strip("?,.!") for word in message_text.split()]
-            for article in store_articles:
-                keywords = article.get("keywords", [])
-                for keyword in keywords:
-                    if keyword in message_words or keyword in message_text:
-                        matched_content = article["content"]
-                        matched_title = article["title"]
+        safety_result = hard_safety_gate(normalized_data)
+        human_result = hard_human_handoff_gate(normalized_data)
+        
+        gate_result = None
+        if safety_result["matched"]:
+            gate_result = safety_result
+        elif human_result["matched"]:
+            gate_result = human_result
+            
+        if gate_result:
+            reply = gate_result["reply_text"]
+            intent = gate_result["intent"]
+            confidence = 0.0
+            source_used = f"Router Escalation: {', '.join(gate_result.get('matched_safety_concepts', []) or gate_result.get('matched_human_concepts', []))}"
+            is_escalated = True
+            brain_mode = "rules"
+            escalation_reason = gate_result["escalation_reason"]
+            db_status = "needs_escalation"
+        else:
+            # Check standard chat flow using Support Brain
+            # 1. Simple Keyword Match in Supabase DB first, then local JSON
+            matched_content = None
+            matched_title = None
+            
+            if supabase_client:
+                try:
+                    from app.services.knowledge_service import KnowledgeService
+                    ret_res = await KnowledgeService.get_support_knowledge(
+                        query=request.message,
+                        store_id=store_id
+                    )
+                    if ret_res.get("success"):
+                        k_list = ret_res.get("knowledge", [])
+                        a_list = ret_res.get("articles", [])
+                        match = rank_knowledge_matches(request.message, k_list, a_list)
+                        if match:
+                            matched_content, matched_title = match
+                except Exception as db_kb_err:
+                    print(f"Error searching Supabase knowledge: {db_kb_err}")
+                    
+            # Local JSON fallback matching
+            if not matched_content:
+                message_words = [word.strip("?,.!") for word in message_text.split()]
+                for article in store_articles:
+                    keywords = article.get("keywords", [])
+                    for keyword in keywords:
+                        if keyword in message_words or keyword in message_text:
+                            matched_content = article["content"]
+                            matched_title = article["title"]
+                            break
+                    if matched_content:
                         break
-                if matched_content:
-                    break
-                
-        # Fallback message
-        store_names = {
-            "hoverboard_store": "Hoverboard Store UK",
-            "hcs_gadgets": "HCS Gadgets Support",
-            "aroma_haven": "Aroma Haven Botanicals"
-        }
-        store_name = store_names.get(store_id, "our store")
-        rules_fallback_reply = (
-            f"Thank you for contacting {store_name}. I want to make sure you get correct assistance. "
-            f"For general guidelines, please make sure your device is charged and operate it only on private land. "
-            f"If you need help with a specific order, technical fault, or warranty claim, please email us at contact@hoverboardstore.co.uk "
-            f"and our support team will get back to you shortly."
-        )
-        
-        # 2. Fetch history
-        previous_context = []
-        if supabase_client:
-            try:
-                logs_res = supabase_client.table("chat_logs")\
-                    .select("user_message, assistant_message")\
-                    .eq("session_id", conversation_id)\
-                    .order("created_at", desc=True)\
-                    .limit(3)\
-                    .execute()
-                if logs_res.data:
-                    for log in reversed(logs_res.data):
-                        previous_context.append({"sender": "user", "content": log.get("user_message", "")})
-                        previous_context.append({"sender": "bot", "content": log.get("assistant_message", "")})
-            except Exception as e:
-                print(f"Error fetching historical context for brain: {e}")
-                
-        # 3. Call Support Brain safely
-        try:
-            from app.services.support_brain import generate_support_reply
-            brain_result = generate_support_reply(
-                store_id=store_id,
-                session_id=conversation_id,
-                user_message=request.message,
-                previous_context=previous_context,
-                retrieved_knowledge=matched_content,
-                rules_fallback_reply=rules_fallback_reply,
-                matched_title=matched_title
+                    
+            # Fallback message
+            store_names = {
+                "hoverboard_store": "Hoverboard Store UK",
+                "hcs_gadgets": "HCS Gadgets Support",
+                "aroma_haven": "Aroma Haven Botanicals"
+            }
+            store_name = store_names.get(store_id, "our store")
+            rules_fallback_reply = (
+                f"Thank you for contacting {store_name}. I want to make sure you get correct assistance. "
+                f"For general guidelines, please make sure your device is charged and operate it only on private land. "
+                f"If you need help with a specific order, technical fault, or warranty claim, please email us at contact@hoverboardstore.co.uk "
+                f"and our support team will get back to you shortly."
             )
             
-            reply = brain_result["reply_text"]
-            is_escalated = brain_result["should_escalate"]
-            intent = brain_result["intent"]
-            confidence = brain_result["confidence"]
-            escalation_reason = brain_result["escalation_reason"]
-            brain_mode = brain_result["brain_mode"]
-            source_used = brain_result["source_used"]
-        except Exception as brain_err:
-            print(f"ERROR: Support Brain crashed: {brain_err}")
-            # Safe absolute fallback — do NOT escalate just because no article matched
-            reply = matched_content if matched_content else rules_fallback_reply
-            is_escalated = False  # fallback reply is still a helpful answer
-            intent = "unknown"
-            confidence = 0.7 if matched_content else 0.5
-            escalation_reason = ""
-            brain_mode = "fallback"
-            source_used = matched_title or "General Support Fallback"
-
+            # 2. Fetch history
+            previous_context = []
+            if supabase_client:
+                try:
+                    logs_res = supabase_client.table("chat_logs")\
+                        .select("user_message, assistant_message")\
+                        .eq("session_id", conversation_id)\
+                        .order("created_at", desc=True)\
+                        .limit(3)\
+                        .execute()
+                    if logs_res.data:
+                        for log in reversed(logs_res.data):
+                            previous_context.append({"sender": "user", "content": log.get("user_message", "")})
+                            previous_context.append({"sender": "bot", "content": log.get("assistant_message", "")})
+                except Exception as e:
+                    print(f"Error fetching historical context for brain: {e}")
+                    
+            # 3. Call Support Brain safely
+            try:
+                from app.services.support_brain import generate_support_reply
+                brain_result = generate_support_reply(
+                    store_id=store_id,
+                    session_id=conversation_id,
+                    user_message=request.message,
+                    previous_context=previous_context,
+                    retrieved_knowledge=matched_content,
+                    rules_fallback_reply=rules_fallback_reply,
+                    matched_title=matched_title
+                )
+                
+                reply = brain_result["reply_text"]
+                is_escalated = brain_result["should_escalate"]
+                intent = brain_result["intent"]
+                confidence = brain_result["confidence"]
+                escalation_reason = brain_result["escalation_reason"]
+                brain_mode = brain_result["brain_mode"]
+                source_used = brain_result["source_used"]
+            except Exception as brain_err:
+                print(f"ERROR: Support Brain crashed: {brain_err}")
+                # Safe absolute fallback — do NOT escalate just because no article matched
+                reply = matched_content if matched_content else rules_fallback_reply
+                is_escalated = False  # fallback reply is still a helpful answer
+                intent = "unknown"
+                confidence = 0.7 if matched_content else 0.5
+                escalation_reason = ""
+                brain_mode = "fallback"
+                source_used = matched_title or "General Support Fallback"
+    
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
         try:
