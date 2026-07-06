@@ -237,7 +237,25 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
 async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
     # 1. Detect intent and risk
     from app.services.support_brain import detect_intent_and_risk, generate_support_reply
-    intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(q)
+    from app.services.intent_router import normalize_message, hard_safety_gate, hard_human_handoff_gate
+    
+    norm = normalize_message(q)
+    s_gate = hard_safety_gate(norm)
+    h_gate = hard_human_handoff_gate(norm)
+    
+    gate_result = None
+    if s_gate["matched"]:
+        gate_result = s_gate
+    elif h_gate["matched"]:
+        gate_result = h_gate
+        
+    if gate_result:
+        intent = gate_result["intent"]
+        risk_level = gate_result["risk_level"]
+        should_escalate = True
+        escalation_reason = gate_result["escalation_reason"]
+    else:
+        intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(q)
     
     # 2. Retrieve knowledge matching same logic as chat_endpoint
     store_articles = knowledge_base.get(store_id, [])

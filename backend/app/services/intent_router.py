@@ -43,7 +43,8 @@ def normalize_message(message: str) -> dict:
         "adviser": "agent",
         "representative": "agent",
         "person": "agent",
-        "human": "agent"
+        "human": "agent",
+        "someone": "agent"
     }
     
     # Replace word families (basic token replace)
@@ -131,7 +132,11 @@ def hard_human_handoff_gate(normalized_data: dict) -> dict:
         "want talk to agent", 
         "want to talk to agent",
         "speak to agent",
+        "speak to a agent",
+        "speak to an agent",
         "speak with agent",
+        "speak with a agent",
+        "speak with an agent",
         "talk to agent",
         "talk with agent",
         "talk to a agent",
@@ -140,6 +145,7 @@ def hard_human_handoff_gate(normalized_data: dict) -> dict:
         "get me a agent",
         "get me agent",
         "agent please",
+        "agent help me",
         "connect me to agent",
         "transfer me to agent",
         "escalate"

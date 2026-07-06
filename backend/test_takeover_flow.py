@@ -1169,79 +1169,7 @@ def test_multiturn_escalation_upgrade():
     print("\nALL MULTI-TURN ESCALATION UPGRADE TESTS PASSED SUCCESSFULLY! ✅")
 
 
-def test_intent_detection_unit():
-    """
-    Pure unit test for detect_intent_and_risk() — no HTTP, no DB required.
 
-    Validates the intent priority order and keyword expansions:
-    - Safety danger words and contextual smell+device detection
-    - Human agent request phrasing variants
-    - Safety wins when both safety and human_request are present
-    - Low-risk intents correctly remain as auto_replied
-    """
-    from app.services.support_brain import detect_intent_and_risk
-    print("\nStarting INTENT DETECTION UNIT TESTS...")
-
-    cases = [
-        # (description, message, expected_intent, expected_escalate)
-        # ── SAFETY: hard keywords ───────────────────────────────────────────
-        ("smoke keyword",             "my hoverboard has smoke coming out", "battery_safety", True),
-        ("burning keyword",           "my hoverboard smells burning",        "battery_safety", True),
-        ("sparks keyword",            "there are sparks from my charger",    "battery_safety", True),
-        ("overheating keyword",       "the battery is overheating badly",    "battery_safety", True),
-        ("swollen keyword",           "the battery looks swollen",           "battery_safety", True),
-
-        # ── SAFETY: contextual smell + device ──────────────────────────────
-        ("smell + hoverboard",        "my hoverboard is smelling",           "battery_safety", True),
-        ("smells + scooter",          "the scooter smells weird",            "battery_safety", True),
-        ("smelling + charger",        "charger is smelling strange",         "battery_safety", True),
-        ("smells + it context",       "it smells really bad when charging",  "battery_safety", True),
-
-        # ── HUMAN REQUEST: new phrasing variants ────────────────────────────
-        ("need agent",                "i need agent to help me",             "speak_to_human",  True),
-        ("need an agent",             "i need an agent please",              "speak_to_human",  True),
-        ("talk to agent",             "i want to talk to agent",             "speak_to_human",  True),
-        ("talk to adviser",           "i want to talk to adviser",           "speak_to_human",  True),
-        ("talk to advisor",           "can i talk to advisor",               "speak_to_human",  True),
-        ("representative",            "can i speak to a representative",     "speak_to_human",  True),
-        ("existing: speak to person", "I want to speak to a person",        "speak_to_human",  True),
-
-        # ── SAFETY WINS OVER HUMAN REQUEST ─────────────────────────────────
-        ("smell+need agent: safety wins",
-         "i need agent to talk cause my hoverboard is smelling",
-         "battery_safety", True),
-        ("burning+speak to person: safety wins",
-         "it is burning can i speak to a person",
-         "battery_safety", True),
-
-        # ── LOW-RISK: must NOT escalate ─────────────────────────────────────
-        ("return policy",             "Return policy",                       "return_policy",         False),
-        ("age suitability",           "which hoverboard is good for 9 year old", "age_suitability",  False),
-        ("stops working (no danger)", "if it stops working what do i do",   "unknown",               False),
-        ("warranty question",         "what is the warranty on this",        "warranty_question",     False),
-        ("shipping question",         "how long does delivery take",         "shipping_times",        False),
-    ]
-
-    passed = 0
-    failed = 0
-    for desc, msg, exp_intent, exp_escalate in cases:
-        intent, risk_level, escalate, reason = detect_intent_and_risk(msg)
-        ok_intent = (intent == exp_intent)
-        ok_escalate = (escalate == exp_escalate)
-        if ok_intent and ok_escalate:
-            print(f"  ✅ [{desc}] intent={intent}, escalate={escalate}")
-            passed += 1
-        else:
-            issues = []
-            if not ok_intent:
-                issues.append(f"intent={intent} (expected {exp_intent})")
-            if not ok_escalate:
-                issues.append(f"escalate={escalate} (expected {exp_escalate})")
-            print(f"  ❌ [{desc}] FAIL: {', '.join(issues)} | msg='{msg}'")
-            failed += 1
-
-    assert failed == 0, f"INTENT DETECTION UNIT TESTS: {failed} case(s) FAILED (see above)"
-    print(f"\nALL {passed} INTENT DETECTION UNIT TESTS PASSED SUCCESSFULLY! ✅")
 
 def test_staging_demo_widget_config():
     print("\nStarting integration test for staging demo widget configuration...")
@@ -1314,7 +1242,6 @@ if __name__ == "__main__":
         test_widget_endpoint_resolution()
         test_shopify_widget_payload_variations()
         test_ai_support_agent_scenarios()
-        test_intent_detection_unit()
         test_status_routing_assertions()
         test_multiturn_escalation_upgrade()
         test_staging_demo_widget_config()

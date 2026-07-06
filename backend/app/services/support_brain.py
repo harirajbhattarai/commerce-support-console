@@ -22,57 +22,10 @@ def detect_intent_and_risk(message_text: str):
     msg = message_text.lower().strip()
 
     # ── 1. SAFETY DANGER KEYWORDS ─────────────────────────────────────────────
-    # Hard danger words — always high-risk regardless of context
-    safety_danger_keywords = [
-        "smoke", "fire", "spark", "sparks", "burning", "burning smell",
-        "melt", "melting", "explode", "explosion",
-        "swell", "swelling", "swollen", "puffed up", "puffed",
-        "overheat", "overheating", "overheated",
-        "battery getting hot", "battery is hot", "getting very hot",
-        "water damage", "water damaged",
-        "injury", "injured", "hurt",
-        "damaged charger", "damaged battery", "visible damage to charger",
-    ]
-    has_safety_danger = any(kw in msg for kw in safety_danger_keywords)
-
-    # Contextual smell check: "smell"/"smelling"/"smells" are a safety risk ONLY
-    # when a device/product word is also present in the same message.
-    # Standalone "it smells" is ambiguous but with device context it is high-risk.
-    if not has_safety_danger:
-        smell_words = ["smell", "smells", "smelling", "smelly", "odour", "odor", "strange smell", "funny smell"]
-        device_words = [
-            "hoverboard", "scooter", "battery", "charger", "charging",
-            "board", "device", "product", "it"
-        ]
-        has_smell = any(sw in msg for sw in smell_words)
-        has_device = any(dw in msg for dw in device_words)
-        if has_smell and has_device:
-            has_safety_danger = True
+    # Removed in Batch 1: Handled upstream by deterministic hard_safety_gate
 
     # ── 2. HUMAN TRANSFER INTENT ──────────────────────────────────────────────
-    # Catches natural customer phrasing for requesting a human agent.
-    # Checked AFTER safety so a message like "need agent, my board is smoking"
-    # still routes as battery_safety (safety wins for intent).
-    human_keywords = [
-        # Explicit agent/person requests
-        "speak to a person", "speak to someone", "talk to a person", "talk to someone",
-        "talk to human", "talk to an agent", "talk to agent",
-        "need an agent", "need agent", "need a human", "need human",
-        "need a person", "need someone",
-        "want to talk to", "want to speak to",
-        "i need to speak", "i want to speak",
-        # Agent/person labels
-        "real person", "actual person", "human please", "human support",
-        "agent please", "live agent", "support agent",
-        "customer service", "support team",
-        # Representative / adviser / advisor
-        "representative", "adviser", "advisor",
-        # Direct phrasing
-        "speak with someone", "speak with a person",
-        "connect me to", "transfer me to",
-        "escalate", "escalate this",
-    ]
-    is_human_request = any(kw in msg for kw in human_keywords)
+    # Removed in Batch 1: Handled upstream by deterministic hard_human_handoff_gate
 
     # ── 3. LEGAL THREAT ───────────────────────────────────────────────────────
     legal_keywords = [
@@ -102,14 +55,8 @@ def detect_intent_and_risk(message_text: str):
     intent = "unknown"
     risk_level = "low"
 
-    # Safety always wins — even if the customer also requested a human agent
-    if has_safety_danger:
-        intent = "battery_safety"
-        risk_level = "high"
-    elif is_human_request:
-        intent = "speak_to_human"
-        risk_level = "high"
-    elif has_legal_threat:
+    # Safety and explicit human requests are now handled upstream
+    if has_legal_threat:
         intent = "complaint"
         risk_level = "high"
     elif has_payment_issue:
