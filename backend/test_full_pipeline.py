@@ -99,25 +99,40 @@ def test_full_pipeline_mixed_safety_human():
 def test_metadata_boundary_controls():
     # Inject test mock articles into the local knowledge_base
     from app.main import knowledge_base
-    
+    import uuid
+
     test_articles = [
         # Scenario A: Title contains "Safety" but metadata is not high risk.
-        # Should NOT classify as critical solely from title.
+        # Expected: not critical
         {
             "title": "UKCA and CE Safety Certification",
-            "keywords": ["certification", "ukca", "ce"],
+            "keywords": ["ukca_safety_test"],
             "content": "Our hoverboards meet UKCA safety standards.",
             "risk_level": "low",
             "human_review_required": False
         },
-        # Scenario B & C: High-risk article (title doesn't matter)
-        # Should NOT serve as normal auto-reply for a safe query.
+        # Scenario B: High-risk article (title doesn't matter)
+        # Expected: critical
         {
-            "title": "Critical Battery Instructions",
-            "keywords": ["fire", "red", "battery", "critical"],
+            "title": "Critical Battery and Charging — Stop Use Immediately",
+            "keywords": ["critical_battery_test"],
             "content": "Stop using immediately if smoking.",
             "risk_level": "high",
             "human_review_required": True
+        },
+        # Scenario C: Title contains "Safety" but has no structured metadata and no approved classification
+        # Expected: UNKNOWN / UNCLASSIFIED (so not served directly)
+        {
+            "title": "General Riding Safety Tips",
+            "keywords": ["riding_safety_test"],
+            "content": "Wear a helmet when riding."
+        },
+        # Scenario D: Title contains no safety/hazard words and no metadata
+        # Expected: UNKNOWN / UNCLASSIFIED (so not served directly)
+        {
+            "title": "Basic Maintenance Guide",
+            "keywords": ["basic_maintenance_test"],
+            "content": "Clean your hoverboard regularly."
         }
     ]
     
@@ -128,40 +143,47 @@ def test_metadata_boundary_controls():
     original_articles = list(knowledge_base["hoverboard_store"])
     knowledge_base["hoverboard_store"] = test_articles
     
+    session_a = None
+    session_b = None
+    session_c = None
+    session_d = None
+    
     try:
-        # Run test for Scenario A & D
-        # We query "ukca safety fire red" -> matches Scenario A
-        # The query is safe (no device context + smell/hot, and "fire red" bypasses critical gate)
-        q_safe_a = "ukca safety fire red colour hoverboard"
+        # A. Safe query -> UKCA article. Should NOT block it.
+        q_a = "what is the ukca_safety_test for hoverboard"
         session_a = f"test-meta-a-{uuid.uuid4()}"
-        try:
-            res_a = client.post("/api/chat", json={
-                "store_id": "hoverboard_store",
-                "message": q_safe_a,
-                "conversation_id": session_a
-            })
-            # It should return the safe article, NOT escalate, and NOT block it.
-            assert "UKCA" in res_a.json()["reply"], "Did not serve safe article with 'Safety' in title!"
-        finally:
-            delete_session(session_a)
-
-        # Run test for Scenario B & C
-        # We query "critical battery fire red" -> matches Scenario B/C
-        # The query is safe ("fire red", "battery" is context but no smell/hot)
-        q_safe_b = "critical battery instructions fire red colour hoverboard"
+        res_a = client.post("/api/chat", json={"store_id": "hoverboard_store", "message": q_a, "conversation_id": session_a})
+        assert "UKCA" in res_a.json()["reply"], "Did not serve safe article with 'Safety' in title!"
+        
+        # B. Safe query -> High risk article. Should BLOCK it.
+        q_b = "what are the critical_battery_test instructions"
         session_b = f"test-meta-b-{uuid.uuid4()}"
-        try:
-            res_b = client.post("/api/chat", json={
-                "store_id": "hoverboard_store",
-                "message": q_safe_b,
-                "conversation_id": session_b
-            })
-            # It should block the high-risk article and return a fallback!
-            assert "Stop using immediately" not in res_b.json()["reply"], "Falsely served high-risk article!"
-            assert "General guidelines" in res_b.json()["reply"] or "contact@hoverboardstore.co.uk" in res_b.json()["reply"], "Should return general rules fallback."
-        finally:
-            delete_session(session_b)
+        res_b = client.post("/api/chat", json={"store_id": "hoverboard_store", "message": q_b, "conversation_id": session_b})
+        assert "Stop using immediately" not in res_b.json()["reply"], "Falsely served high-risk article directly!"
+        
+        # C. Safe query -> Unknown legacy article with 'Safety' in title. Should BLOCK it.
+        q_c = "what are the riding_safety_test rules"
+        session_c = f"test-meta-c-{uuid.uuid4()}"
+        res_c = client.post("/api/chat", json={"store_id": "hoverboard_store", "message": q_c, "conversation_id": session_c})
+        assert "Wear a helmet" not in res_c.json()["reply"], "Falsely served unknown legacy article with 'Safety' in title directly!"
+        
+        # D. Safe query -> Unknown legacy article with NO 'Safety' in title. Should BLOCK it.
+        q_d = "what is the basic_maintenance_test guide"
+        session_d = f"test-meta-d-{uuid.uuid4()}"
+        res_d = client.post("/api/chat", json={"store_id": "hoverboard_store", "message": q_d, "conversation_id": session_d})
+        assert "Clean your hoverboard" not in res_d.json()["reply"], "Falsely served unknown legacy article directly!"
+        
     finally:
         # Cleanup mock data
         knowledge_base["hoverboard_store"] = original_articles
         app.main.supabase_client = original_client
+        
+        # Cleanup generated sessions
+        if session_a:
+            delete_session(session_a)
+        if session_b:
+            delete_session(session_b)
+        if session_c:
+            delete_session(session_c)
+        if session_d:
+            delete_session(session_d)

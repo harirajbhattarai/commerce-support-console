@@ -23,7 +23,6 @@ def normalize_message(message: str) -> dict:
     msg = re.sub(r'(.)\1{2,}', r'\1\1', msg)
     
     # Safe replacements before splitting
-    msg = msg.replace("fire red", "red")
     msg = msg.replace("support team", "agent")
     
     # Word families mapping
@@ -76,12 +75,18 @@ def hard_safety_gate(normalized_data: dict) -> dict:
     matched = False
     matched_concepts = []
     
+    visual_modifiers = ["red", "grey", "color", "colour", "design", "pattern", "paint"]
+    
     # Critical danger concepts (always escalate)
     danger_words = ["smoke", "fire", "spark", "sparks", "burn", "overheat", "melt", "explode", "explosion"]
-    for dw in danger_words:
-        if dw in tokens:
+    for i, token in enumerate(tokens):
+        if token in danger_words:
+            # Check for false-positive visual description (e.g. "fire red", "smoke grey")
+            if token in ["fire", "smoke", "spark", "sparks"]:
+                if i + 1 < len(tokens) and tokens[i+1] in visual_modifiers:
+                    continue # Skip this match
             matched = True
-            matched_concepts.append(dw)
+            matched_concepts.append(token)
             
     # Contextual danger concepts
     device_context = ["hoverboard", "scooter", "battery", "charger", "device", "board", "it"]
@@ -97,10 +102,16 @@ def hard_safety_gate(normalized_data: dict) -> dict:
         matched = True
         matched_concepts.append("swell")
         
-    # 3. Hot + Battery Context
-    if "hot" in tokens and "battery" in tokens:
-        matched = True
-        matched_concepts.append("hot battery")
+    # 3. Hot + Device Context
+    if "hot" in tokens and ("battery" in tokens or has_device):
+        is_hot_selling = False
+        for i, token in enumerate(tokens):
+            if token == "hot" and i + 1 < len(tokens) and tokens[i+1] == "selling":
+                is_hot_selling = True
+                break
+        if not is_hot_selling:
+            matched = True
+            matched_concepts.append("hot device")
         
     if matched:
         return {
@@ -108,8 +119,8 @@ def hard_safety_gate(normalized_data: dict) -> dict:
             "route_decision": "escalated",
             "risk_level": "high",
             "intent": "battery_safety",
-            "matched_safety_concepts": matched_concepts,
-            "escalation_reason": f"Hard safety gate matched: {', '.join(matched_concepts)}",
+            "matched_safety_concepts": list(set(matched_concepts)),
+            "escalation_reason": f"Hard safety gate matched: {', '.join(set(matched_concepts))}",
             "reply_text": "Please stop using the hoverboard immediately. Do not charge it again. If it is safe, unplug it and keep it away from flammable materials. Do not attempt to repair the battery or charger yourself. Our support team has been notified and will reply here shortly. You can also contact contact@hoverboardstore.co.uk."
         }
         

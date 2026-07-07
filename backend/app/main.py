@@ -318,44 +318,43 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
         "brain_mode": brain_res["brain_mode"],
         "final_answer_preview": brain_res["reply_text"]
     }
-def is_high_risk_knowledge(item: dict) -> bool:
+def get_knowledge_risk_classification(item: dict) -> str:
     if not item:
-        return False
+        return "unknown"
         
-    # Prefer structured metadata
-    if item.get("risk_level") == "high":
-        return True
-    if item.get("human_review_required") is True:
-        return True
-    if item.get("is_safety_critical") is True:
-        return True
-    
     # Check explicit safe metadata first
     if item.get("risk_level") == "low" and not item.get("is_safety_critical") and not item.get("human_review_required"):
-        return False
+        return "low"
 
+    # Prefer structured metadata
+    if item.get("risk_level") == "high":
+        return "high"
+    if item.get("human_review_required") is True:
+        return "high"
+    if item.get("is_safety_critical") is True:
+        return "high"
+        
     # Check knowledge_type if available
     k_type = item.get("knowledge_type")
     if k_type and k_type in ["safety", "battery", "hazard", "critical"]:
-        return True
+        return "high"
         
     # If it's a legacy JSON fallback without explicit metadata, we do NOT use title substring matching.
     # We explicitly check if the legacy item contains safety keywords in its defined 'keywords' metadata array.
-    # But only if it doesn't explicitly declare itself as low risk (handled above).
     if not item.get("risk_level") and not item.get("knowledge_type"):
         if "keywords" in item:
             keywords = item.get("keywords", [])
             if isinstance(keywords, list):
                 if "safety" in keywords or "fire" in keywords or "critical" in keywords:
-                    return True
-        else:
-            # Report the metadata gap explicitly
-            title = item.get("title", "")
-            print(f"WARNING: Metadata gap detected for article '{title}'. Lacks structured risk_level and keywords. Falling back to title safety check.")
-            if "safety" in title.lower() or "critical" in title.lower() or "hazard" in title.lower():
-                return True
+                    return "high"
+                
+        # If no keywords triggered high, or if there were no keywords at all:
+        # Report the metadata gap explicitly
+        title = item.get("title", "")
+        print(f"WARNING: Metadata gap detected for article '{title}'. Lacks structured risk_level. Classifying as UNKNOWN.")
+        return "unknown"
             
-    return False
+    return "unknown"
 
 def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list: list):
     query_words = set(w.strip("?,.!") for w in query_text.lower().split() if len(w) > 3)
@@ -504,10 +503,12 @@ async def chat_endpoint(request: ChatRequest):
                         break
                         
             # --- MINIMUM BATCH 1 BOUNDARY GUARD ---
-            # Do not serve high-risk safety knowledge as a normal auto-reply
-            # if the authoritative hard_safety_gate did not trigger.
-            if is_high_risk_knowledge(matched_item):
-                matched_item = None
+            # Do not serve high-risk safety knowledge or unclassified legacy knowledge
+            # as a normal authoritative auto-reply if the authoritative hard_safety_gate did not trigger.
+            if matched_item:
+                risk_class = get_knowledge_risk_classification(matched_item)
+                if risk_class in ["high", "unknown"]:
+                    matched_item = None
                 
             matched_content = matched_item.get("content") if matched_item else None
             matched_title = matched_item.get("title") if matched_item else None
