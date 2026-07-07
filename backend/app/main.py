@@ -209,7 +209,8 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
                 a_list = ret_res.get("articles", [])
                 match = rank_knowledge_matches(q, k_list, a_list)
                 if match:
-                    matched_content, matched_title = match
+                    matched_content = match.get("content")
+                    matched_title = match.get("title")
         except Exception as err:
             print(f"Error in test-match endpoint: {err}")
             
@@ -274,7 +275,8 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
                 a_list = ret_res.get("articles", [])
                 match = rank_knowledge_matches(q, k_list, a_list)
                 if match:
-                    matched_content, matched_title = match
+                    matched_content = match.get("content")
+                    matched_title = match.get("title")
         except Exception as err:
             print(f"Error in test-agent knowledge search: {err}")
             
@@ -316,6 +318,45 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
         "brain_mode": brain_res["brain_mode"],
         "final_answer_preview": brain_res["reply_text"]
     }
+def is_high_risk_knowledge(item: dict) -> bool:
+    if not item:
+        return False
+        
+    # Prefer structured metadata
+    if item.get("risk_level") == "high":
+        return True
+    if item.get("human_review_required") is True:
+        return True
+    if item.get("is_safety_critical") is True:
+        return True
+    
+    # Check explicit safe metadata first
+    if item.get("risk_level") == "low" and not item.get("is_safety_critical") and not item.get("human_review_required"):
+        return False
+
+    # Check knowledge_type if available
+    k_type = item.get("knowledge_type")
+    if k_type and k_type in ["safety", "battery", "hazard", "critical"]:
+        return True
+        
+    # If it's a legacy JSON fallback without explicit metadata, we do NOT use title substring matching.
+    # We explicitly check if the legacy item contains safety keywords in its defined 'keywords' metadata array.
+    # But only if it doesn't explicitly declare itself as low risk (handled above).
+    if not item.get("risk_level") and not item.get("knowledge_type"):
+        if "keywords" in item:
+            keywords = item.get("keywords", [])
+            if isinstance(keywords, list):
+                if "safety" in keywords or "fire" in keywords or "critical" in keywords:
+                    return True
+        else:
+            # Report the metadata gap explicitly
+            title = item.get("title", "")
+            print(f"WARNING: Metadata gap detected for article '{title}'. Lacks structured risk_level and keywords. Falling back to title safety check.")
+            if "safety" in title.lower() or "critical" in title.lower() or "hazard" in title.lower():
+                return True
+            
+    return False
+
 def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list: list):
     query_words = set(w.strip("?,.!") for w in query_text.lower().split() if len(w) > 3)
     best_match = None
@@ -336,7 +377,7 @@ def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list:
                 
         if score > best_score:
             best_score = score
-            best_match = (item.get("content"), item.get("title"))
+            best_match = item
             
     # 2. Rank support_articles entries
     for item in articles_list:
@@ -348,7 +389,7 @@ def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list:
         
         if score > best_score:
             best_score = score
-            best_match = (item.get("content"), item.get("title"))
+            best_match = item
             
     return best_match
 
@@ -434,8 +475,7 @@ async def chat_endpoint(request: ChatRequest):
         else:
             # Check standard chat flow using Support Brain
             # 1. Simple Keyword Match in Supabase DB first, then local JSON
-            matched_content = None
-            matched_title = None
+            matched_item = None
             
             if supabase_client:
                 try:
@@ -447,24 +487,30 @@ async def chat_endpoint(request: ChatRequest):
                     if ret_res.get("success"):
                         k_list = ret_res.get("knowledge", [])
                         a_list = ret_res.get("articles", [])
-                        match = rank_knowledge_matches(request.message, k_list, a_list)
-                        if match:
-                            matched_content, matched_title = match
+                        matched_item = rank_knowledge_matches(request.message, k_list, a_list)
                 except Exception as db_kb_err:
                     print(f"Error searching Supabase knowledge: {db_kb_err}")
                     
             # Local JSON fallback matching
-            if not matched_content:
+            if not matched_item:
                 message_words = [word.strip("?,.!") for word in message_text.split()]
                 for article in store_articles:
                     keywords = article.get("keywords", [])
                     for keyword in keywords:
                         if keyword in message_words or keyword in message_text:
-                            matched_content = article["content"]
-                            matched_title = article["title"]
+                            matched_item = article
                             break
-                    if matched_content:
+                    if matched_item:
                         break
+                        
+            # --- MINIMUM BATCH 1 BOUNDARY GUARD ---
+            # Do not serve high-risk safety knowledge as a normal auto-reply
+            # if the authoritative hard_safety_gate did not trigger.
+            if is_high_risk_knowledge(matched_item):
+                matched_item = None
+                
+            matched_content = matched_item.get("content") if matched_item else None
+            matched_title = matched_item.get("title") if matched_item else None
                     
             # Fallback message
             store_names = {

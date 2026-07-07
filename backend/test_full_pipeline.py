@@ -40,7 +40,10 @@ def delete_session(session_id: str):
 def test_full_pipeline_negative_controls():
     queries = [
         "fire red colour hoverboard",
-        "this product is hot-selling",
+        "smoke grey colour hoverboard",
+        "spark design hoverboard",
+        "hot-selling hoverboard",
+        "fire pattern hoverboard",
         "a person is buying this for a child",
         "Personal Light Electric Vehicle rules",
         "someone is buying this for my child",
@@ -55,16 +58,18 @@ def test_full_pipeline_negative_controls():
             res = run_chat(q, session_id)
             assert res["escalated"] == False, f"'{q}' falsely escalated! Status: {res['effective_status']}"
             assert res["effective_status"] != "needs_escalation", f"'{q}' falsely has needs_escalation status"
+            assert "stop using" not in res["reply"].lower(), f"'{q}' falsely served stop-use safety answer!"
         finally:
             delete_session(session_id)
 
 def test_full_pipeline_positive_controls():
     queries = [
         "my hoverboard is burn",
-        "my hoverboard smells burnt",
-        "smoke coming from my board",
+        "smoke coming from my hoverboard",
+        "sparks coming from charger",
         "battery is swollen",
-        "sparks coming from my charger",
+        "hoverboard is extremely hot",
+        "my hoverboard smells burnt",
         "i want talk to person",
         "can i talk to someone",
         "human please",
@@ -81,12 +86,82 @@ def test_full_pipeline_positive_controls():
             delete_session(session_id)
 
 def test_full_pipeline_mixed_safety_human():
-    q = "i need an agent my hoverboard smells burnt"
-    session_id = f"test-full-pipeline-mix-{uuid.uuid4()}"
+    q = "my hoverboard smells and I want to talk to a person"
+    session_id = f"test-full-pipeline-mixed-{uuid.uuid4()}"
     try:
         res = run_chat(q, session_id)
-        assert res["escalated"] == True, f"'{q}' failed to escalate!"
-        assert res["effective_status"] == "needs_escalation", f"'{q}' wrong status: {res['effective_status']}"
-        assert "safety" in res["routing_reason"].lower() or "critical" in res["routing_reason"].lower() or "battery" in res["routing_reason"].lower() or "smell" in res["routing_reason"].lower(), f"Safety should be primary routing reason. Reason: {res['routing_reason']}"
+        assert res["escalated"] == True
+        assert res["effective_status"] == "needs_escalation"
+        assert "stop using" in res["reply"].lower(), "Safety response must override human handoff"
     finally:
         delete_session(session_id)
+
+def test_metadata_boundary_controls():
+    # Inject test mock articles into the local knowledge_base
+    from app.main import knowledge_base
+    
+    test_articles = [
+        # Scenario A: Title contains "Safety" but metadata is not high risk.
+        # Should NOT classify as critical solely from title.
+        {
+            "title": "UKCA and CE Safety Certification",
+            "keywords": ["certification", "ukca", "ce"],
+            "content": "Our hoverboards meet UKCA safety standards.",
+            "risk_level": "low",
+            "human_review_required": False
+        },
+        # Scenario B & C: High-risk article (title doesn't matter)
+        # Should NOT serve as normal auto-reply for a safe query.
+        {
+            "title": "Critical Battery Instructions",
+            "keywords": ["fire", "red", "battery", "critical"],
+            "content": "Stop using immediately if smoking.",
+            "risk_level": "high",
+            "human_review_required": True
+        }
+    ]
+    
+    import app.main
+    original_client = app.main.supabase_client
+    app.main.supabase_client = None
+    
+    original_articles = list(knowledge_base["hoverboard_store"])
+    knowledge_base["hoverboard_store"] = test_articles
+    
+    try:
+        # Run test for Scenario A & D
+        # We query "ukca safety fire red" -> matches Scenario A
+        # The query is safe (no device context + smell/hot, and "fire red" bypasses critical gate)
+        q_safe_a = "ukca safety fire red colour hoverboard"
+        session_a = f"test-meta-a-{uuid.uuid4()}"
+        try:
+            res_a = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q_safe_a,
+                "conversation_id": session_a
+            })
+            # It should return the safe article, NOT escalate, and NOT block it.
+            assert "UKCA" in res_a.json()["reply"], "Did not serve safe article with 'Safety' in title!"
+        finally:
+            delete_session(session_a)
+
+        # Run test for Scenario B & C
+        # We query "critical battery fire red" -> matches Scenario B/C
+        # The query is safe ("fire red", "battery" is context but no smell/hot)
+        q_safe_b = "critical battery instructions fire red colour hoverboard"
+        session_b = f"test-meta-b-{uuid.uuid4()}"
+        try:
+            res_b = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": q_safe_b,
+                "conversation_id": session_b
+            })
+            # It should block the high-risk article and return a fallback!
+            assert "Stop using immediately" not in res_b.json()["reply"], "Falsely served high-risk article!"
+            assert "General guidelines" in res_b.json()["reply"] or "contact@hoverboardstore.co.uk" in res_b.json()["reply"], "Should return general rules fallback."
+        finally:
+            delete_session(session_b)
+    finally:
+        # Cleanup mock data
+        knowledge_base["hoverboard_store"] = original_articles
+        app.main.supabase_client = original_client
