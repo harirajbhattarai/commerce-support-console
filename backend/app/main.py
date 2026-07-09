@@ -292,16 +292,24 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
                     break
             if matched_content:
                 break
-                
+    
+    # 2. Fetch history (mock empty for test-agent)
+    previous_context = []
+    
+    # --- BATCH 2: MiniMax Structured Semantic Understanding ---
+    from app.services.semantic_understanding import analyze_semantics
+    semantic_understanding = analyze_semantics(q, previous_context)
+
     # 3. Call generate_support_reply to see the mock or real answer
     brain_res = generate_support_reply(
         store_id=store_id,
         session_id="test-session-agent",
         user_message=q,
-        previous_context=[],
+        previous_context=previous_context,
         retrieved_knowledge=matched_content,
-        rules_fallback_reply="General support rules fallback answer.",
-        matched_title=matched_title
+        rules_fallback_reply="Test fallback.",
+        matched_title=matched_title,
+        semantic_understanding=semantic_understanding
     )
     
     route_decision = "escalated" if brain_res["should_escalate"] else (
@@ -544,6 +552,10 @@ async def chat_endpoint(request: ChatRequest):
                 except Exception as e:
                     print(f"Error fetching historical context for brain: {e}")
                     
+            # --- BATCH 2: MiniMax Structured Semantic Understanding ---
+            from app.services.semantic_understanding import analyze_semantics
+            semantic_understanding = analyze_semantics(request.message, previous_context)
+
             # 3. Call Support Brain safely
             try:
                 from app.services.support_brain import generate_support_reply
@@ -554,7 +566,8 @@ async def chat_endpoint(request: ChatRequest):
                     previous_context=previous_context,
                     retrieved_knowledge=matched_content,
                     rules_fallback_reply=rules_fallback_reply,
-                    matched_title=matched_title
+                    matched_title=matched_title,
+                    semantic_understanding=semantic_understanding
                 )
                 
                 reply = brain_result["reply_text"]
@@ -597,22 +610,32 @@ async def chat_endpoint(request: ChatRequest):
                 safe_source = (source_used[:80] + "...") if source_used and len(source_used) > 80 else source_used
                 safe_reason = (escalation_reason[:80] + "...") if escalation_reason and len(escalation_reason) > 80 else escalation_reason
                 
+                from app.services.semantic_understanding import build_semantic_metadata
+                
+                # Start with backwards-compatible auxiliary metadata. 
+                # These must not overwrite or replace the semantic_* contract.
                 meta_payload = {
+                    "matched_article": safe_source,
+                    "escalation_reason": safe_reason,
+                    "confidence": confidence,
                     "brain_mode": brain_mode,
                     "intent": intent,
-                    "source": safe_source,
-                    "confidence": confidence,
-                    "escalation_reason": safe_reason,
                     "effective_status": effective_status
                 }
-                matched_source_str = json.dumps(meta_payload)
-                if len(matched_source_str) > 255:
-                    meta_payload["source"] = safe_source[:40] if safe_source else None
-                    meta_payload["escalation_reason"] = safe_reason[:40] if safe_reason else None
-                    matched_source_str = json.dumps(meta_payload)
+                
+                if 'semantic_understanding' in locals() and semantic_understanding:
+                    sem_mode = "MINIMAX_STRUCTURED" if brain_mode == "minimax" else "FALLBACK"
+                    sem_payload = build_semantic_metadata(semantic_understanding, sem_mode)
+                    meta_payload.update(sem_payload)
+                    if brain_mode == "minimax" and semantic_understanding.intent.value != "unknown":
+                        meta_payload["brain_mode"] = "MINIMAX_STRUCTURED"
+
+                semantic_metadata = meta_payload
+                matched_source_str = safe_source
             except Exception as ser_err:
                 print(f"ERROR: Failed to serialize metadata: {ser_err}")
                 matched_source_str = source_used
+                semantic_metadata = {}
             
             log_entry = {
                 "store_id": store_id,
@@ -620,6 +643,7 @@ async def chat_endpoint(request: ChatRequest):
                 "user_message": request.message,
                 "assistant_message": reply,
                 "matched_source": matched_source_str,
+                "semantic_metadata": semantic_metadata,
                 "confidence": confidence,
                 "escalated": escalated,
                 "status": db_write_status
@@ -654,25 +678,32 @@ async def get_conversations(store_id: Optional[str] = None):
                 log["status"] = "archived"
                 
             raw_source = log.get("matched_source")
+            semantic_meta = log.get("semantic_metadata")
             log["brain_mode"] = "rules"
             log["intent"] = "unknown"
             log["escalation_reason"] = ""
             
-            if raw_source:
+            if semantic_meta and isinstance(semantic_meta, dict) and "brain_mode" in semantic_meta:
+                meta = semantic_meta
+                log["brain_mode"] = meta.get("brain_mode", "rules")
+                log["intent"] = meta.get("intent", "unknown")
+                log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
+                log["escalation_reason"] = meta.get("escalation_reason", "")
+                
+                effective = meta.get("effective_status")
+                if effective and log.get("status") == "new" and not log.get("escalated"):
+                    log["status"] = effective
+            elif raw_source:
                 try:
                     import json
                     meta = json.loads(raw_source)
                     if isinstance(meta, dict) and "brain_mode" in meta:
                         log["brain_mode"] = meta.get("brain_mode", "rules")
                         log["intent"] = meta.get("intent", "unknown")
-                        log["matched_source"] = meta.get("source")
+                        log["matched_source"] = meta.get("matched_article", meta.get("source", raw_source))
                         log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
                         log["escalation_reason"] = meta.get("escalation_reason", "")
-                        # Surface effective_status from metadata so dashboard shows
-                        # auto_replied correctly (DB column is constrained to 'new').
-                        # Guard: only apply the auto_replied override when the row is
-                        # genuinely not escalated — never allow auto_replied to overwrite
-                        # a row that has escalated=True.
+                        
                         effective = meta.get("effective_status")
                         if effective and log.get("status") == "new" and not log.get("escalated"):
                             log["status"] = effective

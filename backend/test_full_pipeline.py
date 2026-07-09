@@ -7,6 +7,10 @@ import json
 
 client = TestClient(app)
 
+from tests.integration_env_guard import verify_staging_environment
+verify_staging_environment()
+
+
 def run_chat(message: str, session_id: str):
     # ensure admin token is set
     admin_token = settings.ADMIN_DASHBOARD_TOKEN or "test_admin_token"

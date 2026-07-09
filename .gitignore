@@ -1,8 +1,11 @@
 # Secrets & Config
 .env
 backend/.env
-.env.*
+backend/.env.*.local
+backend/.env.staging.local
 !.env.example
+!backend/.env.example
+!backend/.env.staging.example
 
 # Python virtual environments
 venv/

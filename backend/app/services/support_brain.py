@@ -172,13 +172,23 @@ def generate_support_reply(
     previous_context: Optional[List[Dict[str, str]]] = None,
     retrieved_knowledge: Optional[str] = None,
     rules_fallback_reply: str = "",
-    matched_title: Optional[str] = None
+    matched_title: Optional[str] = None,
+    semantic_understanding: Optional[Any] = None
 ) -> Dict[str, any]:
     """
     Orchestrates intent detection, safety routing, and response generation (MiniMax or Fallback).
     """
     # 1. Detect Intent and Safety check
-    intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(user_message)
+    if semantic_understanding and semantic_understanding.intent != "unknown" and semantic_understanding.intent != "unknown_general":
+        intent = semantic_understanding.intent.value if hasattr(semantic_understanding.intent, "value") else str(semantic_understanding.intent)
+        risk_level = semantic_understanding.risk_level.value if hasattr(semantic_understanding.risk_level, "value") else str(semantic_understanding.risk_level)
+        should_escalate = False
+        escalation_reason = ""
+        if risk_level == "high":
+            should_escalate = True
+            escalation_reason = f"High risk query ({intent}) requires support agent review (Semantic)"
+    else:
+        intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(user_message)
     msg = user_message.lower().strip()
     
     # 2. If safety router triggers forced escalation, return holding reply immediately

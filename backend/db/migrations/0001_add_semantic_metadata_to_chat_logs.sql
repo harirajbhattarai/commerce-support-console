@@ -1,0 +1,33 @@
+-- =============================================================================
+-- MIGRATION: 0001_add_semantic_metadata_to_chat_logs.sql
+-- =============================================================================
+-- Purpose:
+--   Add a dedicated JSONB column for complete semantic metadata persistence to
+--   prevent dropping semantic fields due to VARCHAR(255) limits on matched_source.
+--   This decouples source/provenance string tracking from structured JSON application state.
+--
+-- Affected Tables:
+--   - chat_logs (ADD COLUMN semantic_metadata JSONB)
+--
+-- Type: ADDITIVE
+--
+-- Staging Test:
+--   [ ] Applied to staging Supabase on: YYYY-MM-DD
+--   [ ] Application tests passed after migration
+--   [ ] /api/test-agent results correct
+--   [ ] Integration test suite passed
+--
+-- Production Execution Checklist:
+--   [ ] Production backup confirmed before running
+--   [ ] This migration runs BEFORE code deploy (if code depends on new schema)
+--   [ ] Verified safe to re-run (idempotent)
+--
+-- Rollback Note:
+--   ALTER TABLE chat_logs DROP COLUMN IF EXISTS semantic_metadata;
+--
+-- Author: Antigravity
+-- Date: 2026-07-07
+-- =============================================================================
+
+ALTER TABLE chat_logs
+ADD COLUMN IF NOT EXISTS semantic_metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
