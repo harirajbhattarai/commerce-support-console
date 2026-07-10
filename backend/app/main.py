@@ -135,33 +135,33 @@ async def serve_admin_dashboard(token: Optional[str] = None):
     expected_token = settings.ADMIN_DASHBOARD_TOKEN
     if expected_token and token != expected_token:
         raise HTTPException(status_code=403, detail="Forbidden: Invalid or missing admin token.")
-        
+
     admin_file_path = os.path.join(frontend_dir, "admin-dashboard.html") if frontend_dir else None
     if not admin_file_path or not os.path.exists(admin_file_path):
         raise HTTPException(status_code=404, detail="Admin dashboard file not found.")
-        
+
     with open(admin_file_path, "r", encoding="utf-8") as f:
         html_content = f.read()
-        
+
     # Inject environment label
     env_name = settings.ENVIRONMENT.upper()
     if env_name == "PRODUCTION":
         env_badge = f'<span class="env-badge" style="background-color: var(--accent-green, #067d62); color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-left: 8px;">{env_name}</span>'
     else: # STAGING
         env_badge = f'<span class="env-badge" style="background-color: var(--amzn-orange, #ff9900); color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; margin-left: 8px;">{env_name}</span>'
-        
+
     html_content = html_content.replace("<!-- APP_ENV_PLACEHOLDER -->", env_badge)
-    
+
     # Inject noindex tags if staging
     robots_tag = ""
     if env_name == "STAGING":
         robots_tag = '<meta name="robots" content="noindex, nofollow">'
     html_content = html_content.replace("<!-- ROBOTS_PLACEHOLDER -->", robots_tag)
-    
+
     headers = {}
     if env_name == "STAGING":
         headers["X-Robots-Tag"] = "noindex, nofollow"
-        
+
     return HTMLResponse(content=html_content, headers=headers)
 
 @app.get("/health")
@@ -174,7 +174,7 @@ def health_check():
             db_status = "connected"
         except Exception as e:
             db_status = f"connection_failed: {str(e)}"
-            
+
     return {
         "status": "healthy",
         "database": db_status,
@@ -196,7 +196,7 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
     store_articles = knowledge_base.get(store_id, [])
     matched_content = None
     matched_title = None
-    
+
     if supabase_client:
         try:
             from app.services.knowledge_service import KnowledgeService
@@ -213,7 +213,7 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
                     matched_title = match.get("title")
         except Exception as err:
             print(f"Error in test-match endpoint: {err}")
-            
+
     if not matched_content:
         # Local JSON fallback
         q_words = [word.strip("?,.!") for word in q.lower().split()]
@@ -226,7 +226,7 @@ async def test_match_endpoint(q: str = "Which hoverboard is best for a 9 year ol
                     break
             if matched_content:
                 break
-                
+
     return {
         "query": q,
         "store_id": store_id,
@@ -239,17 +239,17 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
     # 1. Detect intent and risk
     from app.services.support_brain import detect_intent_and_risk, generate_support_reply
     from app.services.intent_router import normalize_message, hard_safety_gate, hard_human_handoff_gate
-    
+
     norm = normalize_message(q)
     s_gate = hard_safety_gate(norm)
     h_gate = hard_human_handoff_gate(norm)
-    
+
     gate_result = None
     if s_gate["matched"]:
         gate_result = s_gate
     elif h_gate["matched"]:
         gate_result = h_gate
-        
+
     if gate_result:
         intent = gate_result["intent"]
         risk_level = gate_result["risk_level"]
@@ -257,12 +257,12 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
         escalation_reason = gate_result["escalation_reason"]
     else:
         intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(q)
-    
+
     # 2. Retrieve knowledge matching same logic as chat_endpoint
     store_articles = knowledge_base.get(store_id, [])
     matched_content = None
     matched_title = None
-    
+
     if supabase_client:
         try:
             from app.services.knowledge_service import KnowledgeService
@@ -279,7 +279,7 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
                     matched_title = match.get("title")
         except Exception as err:
             print(f"Error in test-agent knowledge search: {err}")
-            
+
     if not matched_content:
         # Local JSON fallback
         q_words = [word.strip("?,.!") for word in q.lower().split()]
@@ -292,10 +292,10 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
                     break
             if matched_content:
                 break
-    
+
     # 2. Fetch history (mock empty for test-agent)
     previous_context = []
-    
+
     # --- BATCH 2: MiniMax Structured Semantic Understanding ---
     from app.services.semantic_understanding import analyze_semantics
     semantic_understanding = analyze_semantics(q, previous_context)
@@ -311,11 +311,11 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
         matched_title=matched_title,
         semantic_understanding=semantic_understanding
     )
-    
+
     route_decision = "escalated" if brain_res["should_escalate"] else (
         "answered_by_minimax" if brain_res["brain_mode"] == "minimax" else "rules_fallback"
     )
-    
+
     return {
         "query": q,
         "store_id": store_id,
@@ -329,7 +329,7 @@ async def test_agent_endpoint(q: str, store_id: str = "hoverboard_store"):
 def get_knowledge_risk_classification(item: dict) -> str:
     if not item:
         return "unknown"
-        
+
     # Check explicit safe metadata first
     if item.get("risk_level") == "low" and not item.get("is_safety_critical") and not item.get("human_review_required"):
         return "low"
@@ -341,12 +341,12 @@ def get_knowledge_risk_classification(item: dict) -> str:
         return "high"
     if item.get("is_safety_critical") is True:
         return "high"
-        
+
     # Check knowledge_type if available
     k_type = item.get("knowledge_type")
     if k_type and k_type in ["safety", "battery", "hazard", "critical"]:
         return "high"
-        
+
     # If it's a legacy JSON fallback without explicit metadata, we do NOT use title substring matching.
     # We explicitly check if the legacy item contains safety keywords in its defined 'keywords' metadata array.
     if not item.get("risk_level") and not item.get("knowledge_type"):
@@ -355,49 +355,49 @@ def get_knowledge_risk_classification(item: dict) -> str:
             if isinstance(keywords, list):
                 if "safety" in keywords or "fire" in keywords or "critical" in keywords:
                     return "high"
-                
+
         # If no keywords triggered high, or if there were no keywords at all:
         # Report the metadata gap explicitly
         title = item.get("title", "")
         print(f"WARNING: Metadata gap detected for article '{title}'. Lacks structured risk_level. Classifying as UNKNOWN.")
         return "unknown"
-            
+
     return "unknown"
 
 def rank_knowledge_matches(query_text: str, knowledge_list: list, articles_list: list):
     query_words = set(w.strip("?,.!") for w in query_text.lower().split() if len(w) > 3)
     best_match = None
     best_score = 0
-    
+
     # 1. Rank product_knowledge entries
     for item in knowledge_list:
         title = item.get("title", "").lower()
         content = item.get("content", "").lower()
-        
+
         # Calculate overlap score
         score = sum(1 for w in query_words if w in title) * 3 + sum(1 for w in query_words if w in content)
-        
+
         # Prioritize kids/beginner keywords for 6.5 inch hoverboard
         if "9" in query_text or "kids" in query_text.lower() or "child" in query_text.lower() or "beginner" in query_text.lower():
             if "6.5" in title or "6.5" in content or "beginner" in title:
                 score += 5
-                
+
         if score > best_score:
             best_score = score
             best_match = item
-            
+
     # 2. Rank support_articles entries
     for item in articles_list:
         title = item.get("title", "").lower()
         content = item.get("content", "").lower()
-        
+
         # Calculate overlap score
         score = sum(1 for w in query_words if w in title) * 3 + sum(1 for w in query_words if w in content)
-        
+
         if score > best_score:
             best_score = score
             best_match = item
-            
+
     return best_match
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -452,7 +452,7 @@ async def chat_endpoint(request: ChatRequest):
     confidence = 0.0
     escalation_reason = ""
     source_used = matched_title
-    
+
     if is_escalated:
         reply = "Our support team has been notified and a representative will reply here shortly."
         source_used = "Staff Takeover Active (Waiting for support representative)"
@@ -460,16 +460,16 @@ async def chat_endpoint(request: ChatRequest):
         # --- BATCH 1: Deterministic Pre-LLM Gates ---
         from app.services.intent_router import normalize_message, hard_safety_gate, hard_human_handoff_gate
         normalized_data = normalize_message(request.message)
-        
+
         safety_result = hard_safety_gate(normalized_data)
         human_result = hard_human_handoff_gate(normalized_data)
-        
+
         gate_result = None
         if safety_result["matched"]:
             gate_result = safety_result
         elif human_result["matched"]:
             gate_result = human_result
-            
+
         if gate_result:
             reply = gate_result["reply_text"]
             intent = gate_result["intent"]
@@ -483,7 +483,7 @@ async def chat_endpoint(request: ChatRequest):
             # Check standard chat flow using Support Brain
             # 1. Simple Keyword Match in Supabase DB first, then local JSON
             matched_item = None
-            
+
             if supabase_client:
                 try:
                     from app.services.knowledge_service import KnowledgeService
@@ -497,7 +497,7 @@ async def chat_endpoint(request: ChatRequest):
                         matched_item = rank_knowledge_matches(request.message, k_list, a_list)
                 except Exception as db_kb_err:
                     print(f"Error searching Supabase knowledge: {db_kb_err}")
-                    
+
             # Local JSON fallback matching
             if not matched_item:
                 message_words = [word.strip("?,.!") for word in message_text.split()]
@@ -509,7 +509,7 @@ async def chat_endpoint(request: ChatRequest):
                             break
                     if matched_item:
                         break
-                        
+
             # --- MINIMUM BATCH 1 BOUNDARY GUARD ---
             # Do not serve high-risk safety knowledge or unclassified legacy knowledge
             # as a normal authoritative auto-reply if the authoritative hard_safety_gate did not trigger.
@@ -517,10 +517,10 @@ async def chat_endpoint(request: ChatRequest):
                 risk_class = get_knowledge_risk_classification(matched_item)
                 if risk_class in ["high", "unknown"]:
                     matched_item = None
-                
+
             matched_content = matched_item.get("content") if matched_item else None
             matched_title = matched_item.get("title") if matched_item else None
-                    
+
             # Fallback message
             store_names = {
                 "hoverboard_store": "Hoverboard Store UK",
@@ -534,7 +534,7 @@ async def chat_endpoint(request: ChatRequest):
                 f"If you need help with a specific order, technical fault, or warranty claim, please email us at contact@hoverboardstore.co.uk "
                 f"and our support team will get back to you shortly."
             )
-            
+
             # 2. Fetch history
             previous_context = []
             if supabase_client:
@@ -551,7 +551,7 @@ async def chat_endpoint(request: ChatRequest):
                             previous_context.append({"sender": "bot", "content": log.get("assistant_message", "")})
                 except Exception as e:
                     print(f"Error fetching historical context for brain: {e}")
-                    
+
             # --- BATCH 2: MiniMax Structured Semantic Understanding ---
             from app.services.semantic_understanding import analyze_semantics
             semantic_understanding = analyze_semantics(request.message, previous_context)
@@ -569,7 +569,7 @@ async def chat_endpoint(request: ChatRequest):
                     matched_title=matched_title,
                     semantic_understanding=semantic_understanding
                 )
-                
+
                 reply = brain_result["reply_text"]
                 is_escalated = brain_result["should_escalate"]
                 intent = brain_result["intent"]
@@ -587,7 +587,7 @@ async def chat_endpoint(request: ChatRequest):
                 escalation_reason = ""
                 brain_mode = "fallback"
                 source_used = matched_title or "General Support Fallback"
-    
+
     # 4. Save to Supabase Chat Logs (if client is active)
     if supabase_client:
         try:
@@ -603,16 +603,16 @@ async def chat_endpoint(request: ChatRequest):
                 # We store the true effective_status inside the metadata JSON.
                 effective_status = "auto_replied"
                 db_write_status = db_status if db_status == "in_progress" else "new"
-                
+
             # Serialize metadata into matched_source safely
             try:
                 import json
                 safe_source = (source_used[:80] + "...") if source_used and len(source_used) > 80 else source_used
                 safe_reason = (escalation_reason[:80] + "...") if escalation_reason and len(escalation_reason) > 80 else escalation_reason
-                
+
                 from app.services.semantic_understanding import build_semantic_metadata
-                
-                # Start with backwards-compatible auxiliary metadata. 
+
+                # Start with backwards-compatible auxiliary metadata.
                 # These must not overwrite or replace the semantic_* contract.
                 meta_payload = {
                     "matched_article": safe_source,
@@ -622,9 +622,13 @@ async def chat_endpoint(request: ChatRequest):
                     "intent": intent,
                     "effective_status": effective_status
                 }
-                
+
                 if 'semantic_understanding' in locals() and semantic_understanding:
-                    sem_mode = "MINIMAX_STRUCTURED" if brain_mode == "minimax" else "FALLBACK"
+                    if hasattr(semantic_understanding, "error_reason") and semantic_understanding.error_reason:
+                        sem_mode = semantic_understanding.error_reason
+                    else:
+                        sem_mode = "MINIMAX_STRUCTURED" if brain_mode == "minimax" else "FALLBACK"
+
                     sem_payload = build_semantic_metadata(semantic_understanding, sem_mode)
                     meta_payload.update(sem_payload)
                     if brain_mode == "minimax" and semantic_understanding.intent.value != "unknown":
@@ -636,7 +640,7 @@ async def chat_endpoint(request: ChatRequest):
                 print(f"ERROR: Failed to serialize metadata: {ser_err}")
                 matched_source_str = source_used
                 semantic_metadata = {}
-            
+
             log_entry = {
                 "store_id": store_id,
                 "session_id": conversation_id,
@@ -671,25 +675,25 @@ async def get_conversations(store_id: Optional[str] = None):
         if store_id:
             query = query.eq("store_id", store_id)
         logs_res = query.execute()
-        
+
         logs = logs_res.data or []
         for log in logs:
             if log.get("matched_source") == "__archived__":
                 log["status"] = "archived"
-                
+
             raw_source = log.get("matched_source")
             semantic_meta = log.get("semantic_metadata")
             log["brain_mode"] = "rules"
             log["intent"] = "unknown"
             log["escalation_reason"] = ""
-            
+
             if semantic_meta and isinstance(semantic_meta, dict) and "brain_mode" in semantic_meta:
                 meta = semantic_meta
                 log["brain_mode"] = meta.get("brain_mode", "rules")
                 log["intent"] = meta.get("intent", "unknown")
                 log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
                 log["escalation_reason"] = meta.get("escalation_reason", "")
-                
+
                 effective = meta.get("effective_status")
                 if effective and log.get("status") == "new" and not log.get("escalated"):
                     log["status"] = effective
@@ -703,7 +707,7 @@ async def get_conversations(store_id: Optional[str] = None):
                         log["matched_source"] = meta.get("matched_article", meta.get("source", raw_source))
                         log["confidence"] = meta.get("confidence", log.get("confidence", 0.0))
                         log["escalation_reason"] = meta.get("escalation_reason", "")
-                        
+
                         effective = meta.get("effective_status")
                         if effective and log.get("status") == "new" and not log.get("escalated"):
                             log["status"] = effective
@@ -739,14 +743,14 @@ async def update_conversation_status(session_id: str, status: str):
             status_code=503,
             detail="Supabase client is not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your backend/.env file."
         )
-    
+
     allowed_statuses = {"new", "auto_replied", "needs_escalation", "in_progress", "resolved", "archived"}
     if status not in allowed_statuses:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid status: '{status}'. Must be one of: {list(allowed_statuses)}"
         )
-        
+
     try:
         # Get existing logs to check if it was previously archived
         existing_res = supabase_client.table("chat_logs")\
@@ -755,22 +759,22 @@ async def update_conversation_status(session_id: str, status: str):
             .execute()
         existing_logs = existing_res.data or []
         was_archived = any(log.get("matched_source") == "__archived__" for log in existing_logs)
-        
+
         # Bypassing DB check constraint by mapping "archived" -> "resolved" with metadata tag
         db_status = "resolved" if status == "archived" else status
         escalated = (status == "needs_escalation")
-        
+
         update_payload = {"status": db_status, "escalated": escalated}
         if status == "archived":
             update_payload["matched_source"] = "__archived__"
         elif was_archived:
             update_payload["matched_source"] = None
-            
+
         response = supabase_client.table("chat_logs")\
             .update(update_payload)\
             .eq("session_id", session_id)\
             .execute()
-            
+
         return {
             "status": "success",
             "message": f"Updated conversation {session_id} to status {status}",
@@ -797,7 +801,7 @@ async def delete_conversation(session_id: str):
                 supabase_client.table(table).delete().eq("session_id", session_id).execute()
             except Exception as e:
                 print(f"Skipping direct delete by session_id for {table}: {e}")
-                
+
         # 2. Handle conversations/messages legacy/parallel table cascade
         try:
             conv_res = supabase_client.table("conversations").select("id").eq("session_id", session_id).execute()
@@ -813,10 +817,10 @@ async def delete_conversation(session_id: str):
                     supabase_client.table("conversations").delete().eq("id", conv_uuid).execute()
         except Exception as e:
             print(f"Skipping conversations table cascade check: {e}")
-            
+
         # 3. Delete parent chat logs
         supabase_client.table("chat_logs").delete().eq("session_id", session_id).execute()
-        
+
         return {
             "status": "success",
             "message": f"Successfully deleted conversation {session_id} and all related records."
@@ -1062,7 +1066,7 @@ async def test_amazon_token():
                 "mode": "sandbox_token_test",
                 "error": "Connector not configured"
             }
-        
+
         result = await get_lwa_access_token()
         if result.get("success"):
             return {
@@ -1100,7 +1104,7 @@ async def get_sandbox_marketplaces_route():
                 "mode": "sandbox_marketplace_test",
                 "error": "Connector not configured"
             }
-        
+
         result = await get_sandbox_marketplaces()
         if result.get("success"):
             return {
@@ -1144,9 +1148,9 @@ async def get_sandbox_orders_route(marketplace_ids: str = None, created_after: s
                 "mode": "sandbox_orders_test",
                 "error": "Connector not configured"
             }
-            
+
         m_list = [m.strip() for m in marketplace_ids.split(",")] if marketplace_ids else None
-        
+
         result = await get_sandbox_orders(marketplace_ids=m_list, created_after=created_after)
         if result.get("success"):
             return {
@@ -1191,7 +1195,7 @@ async def get_sandbox_order_lookup_route(order_id: str):
                 "mode": "sandbox_order_lookup",
                 "error": "Connector not configured"
             }
-            
+
         result = await get_sandbox_order(order_id)
         if result.get("success"):
             return {
@@ -1229,11 +1233,11 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
     from app.services.knowledge_service import KnowledgeService
 
     message_lower = request.message.lower()
-    
+
     # 1. Resolve store_id and channel
     store_id = None
     channel = "shopify"  # Default fallback
-    
+
     if request.session_id and supabase_client:
         try:
             log_res = supabase_client.table("chat_logs").select("store_id").eq("session_id", request.session_id).limit(1).execute()
@@ -1247,7 +1251,7 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
                         channel = "amazon"
         except Exception as e:
             print(f"Error resolving channel/store for session {request.session_id}: {e}")
-            
+
     if request.order_id:
         channel = "amazon"
 
@@ -1257,13 +1261,13 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
         channel=channel,
         store_id=store_id
     )
-    
+
     knowledge_found = False
     knowledge_sources = []
     retrieved_context_summary = None
     human_review_required_from_knowledge = False
     suggested_reply = None
-    
+
     category = "unknown"
     risk = "low"
     action = "draft_reply"
@@ -1272,30 +1276,30 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
         knowledge_found = True
         articles = knowledge_res.get("articles", [])
         knowledge_entries = knowledge_res.get("knowledge", [])
-        
+
         sources_set = set()
         summary_parts = []
-        
+
         matched_guide_type = None
         guide_content = None
-        
+
         for pk_entry in knowledge_entries:
             if pk_entry.get("title"):
                 sources_set.add(pk_entry["title"])
             if pk_entry.get("risk_level") == "high" or pk_entry.get("human_review_required"):
                 human_review_required_from_knowledge = True
-            
+
             if pk_entry.get("knowledge_type") in ["reset_guide", "battery", "charging"]:
                 matched_guide_type = pk_entry.get("knowledge_type")
                 guide_content = pk_entry.get("content")
-                
+
             summary_parts.append(f"[{pk_entry.get('title')}]: {pk_entry.get('content')}")
-            
+
         for art in articles:
             if art.get("title"):
                 sources_set.add(art["title"])
             summary_parts.append(f"[{art.get('title')}]: {art.get('content')}")
-            
+
         knowledge_sources = list(sources_set)
         retrieved_context_summary = " | ".join(summary_parts) if summary_parts else None
 
@@ -1346,67 +1350,67 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
             category = "battery_or_safety_issue"
             risk = "high"
             action = "escalate"
-        
+
         # Negative feedback threat
         elif any(k in message_lower for k in ["feedback", "review", "1 star", "one star", "negative feedback", "report to amazon", "threat", "bad review"]):
             category = "negative_feedback_threat"
             risk = "high"
             action = "escalate"
-            
+
         # A-to-Z Claim
         elif any(k in message_lower for k in ["a-to-z", "claim", "open claim", "guarantee claim", "dispute"]):
             category = "a_to_z_claim_risk"
             risk = "high"
             action = "escalate"
-            
+
         # Check Angry Customer
         elif any(k in message_lower for k in ["angry", "furious", "scam", "cheat", "terrible", "worst", "fraud", "lawyer", "legal", "sue"]):
             category = "angry_customer"
             risk = "high"
             action = "escalate"
-            
+
         # Wrong item
         elif any(k in message_lower for k in ["wrong", "different", "not what i ordered"]):
             category = "wrong_item_received"
             risk = "medium"
             action = "draft_reply"
-            
+
         # Damaged / physical damage (High Risk / Escalate)
         elif any(k in message_lower for k in ["damaged", "cracked", "scratched", "broken", "smashed", "shattered"]):
             category = "damaged_item"
             risk = "high"
             action = "escalate"
-            
+
         # Return request
         elif any(k in message_lower for k in ["return", "send back", "label"]):
             category = "return_request"
             risk = "medium"
             action = "draft_reply"
-            
+
         # Cancellation
         elif any(k in message_lower for k in ["cancel", "cancellation", "stop order", "dont send"]):
             category = "cancellation_request"
             risk = "low"
             action = "draft_reply"
-            
+
         # Refund
         elif any(k in message_lower for k in ["refund", "money back"]):
             category = "refund_question"
             risk = "high"
             action = "escalate"
-            
+
         # Warranty
         elif any(k in message_lower for k in ["warranty", "guarantee"]):
             category = "warranty_question"
             risk = "high"
             action = "escalate"
-            
+
         # Invoice
         elif any(k in message_lower for k in ["invoice", "vat", "receipt", "bill"]):
             category = "invoice_request"
             risk = "low"
             action = "draft_reply"
-            
+
         # Delivery status / Item not received
         elif any(k in message_lower for k in ["where", "tracking", "status", "lost", "not arrived", "delivery", "delivered", "package"]):
             if any(k in message_lower for k in ["lost", "not arrived", "never arrived", "not received"]):
@@ -1417,7 +1421,7 @@ async def analyse_amazon_draft_route(request: AmazonAnalysisRequest):
                 category = "delivery_status"
                 risk = "low"
                 action = "draft_reply"
-                
+
         # Faulty Product (Medium Risk / Draft Reply)
         elif any(k in message_lower for k in ["faulty", "defective", "malfunction", "not working", "calibrate", "calibration", "reset", "beeping", "beep"]):
             category = "faulty_product"

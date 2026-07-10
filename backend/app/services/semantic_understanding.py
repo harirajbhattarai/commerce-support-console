@@ -52,20 +52,23 @@ class SemanticUnderstanding(BaseModel):
     needs_clarification: bool = Field(default=False, description="True if the message is too ambiguous and needs clarification")
     clarification_reason: Optional[str] = Field(default=None, description="Reason why clarification is needed if needs_clarification is True")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0 of the classification")
+    error_reason: Optional[str] = Field(default=None, description="Internal field for tracking API failure reason")
 
 def analyze_semantics(user_message: str, previous_context: Optional[List[Dict[str, str]]] = None) -> SemanticUnderstanding:
     api_key = settings.MINIMAX_API_KEY
     model_name = settings.MINIMAX_MODEL
 
-    default_fallback = SemanticUnderstanding(
-        intent=Intent.unknown,
-        product_family=ProductFamily.unknown,
-        risk_level=RiskLevel.unknown,
-        confidence=0.0
-    )
+    def create_fallback(reason: str) -> SemanticUnderstanding:
+        return SemanticUnderstanding(
+            intent=Intent.unknown,
+            product_family=ProductFamily.unknown,
+            risk_level=RiskLevel.unknown,
+            confidence=0.0,
+            error_reason=reason
+        )
 
     if not api_key or "placeholder" in api_key:
-        return default_fallback
+        return create_fallback("MINIMAX_AUTH_FAILURE")
 
     system_prompt = f"""You are a semantic understanding router for a Hoverboard and Electric Scooter store.
 Your goal is to classify the user's messy, misspelled, or ambiguous message into structured JSON.
@@ -85,12 +88,12 @@ JSON Schema Requirements:
 Output strictly valid JSON and nothing else."""
 
     messages = [{"role": "system", "content": system_prompt}]
-    
+
     if previous_context:
         for ctx in previous_context:
             role = "assistant" if ctx.get("sender") in ["bot", "agent"] else "user"
             messages.append({"role": role, "content": ctx.get("content", "")})
-            
+
     messages.append({"role": "user", "content": user_message})
 
     url = "https://api.minimax.io/v1/chat/completions"
@@ -98,10 +101,7 @@ Output strictly valid JSON and nothing else."""
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    
-    # We will enforce JSON parsing from the model output.
-    # MiniMax supports response_format for structured output in newer models, but we'll instruct it via system prompt to be safe.
-    
+
     payload = {
         "model": model_name,
         "messages": messages,
@@ -109,37 +109,61 @@ Output strictly valid JSON and nothing else."""
         "temperature": 0.1,
         "response_format": {"type": "json_object"}
     }
-    
+
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=5.0)
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=(settings.MINIMAX_CONNECT_TIMEOUT, settings.MINIMAX_READ_TIMEOUT)
+        )
         if response.status_code == 200:
             result = response.json()
             content = result["choices"][0]["message"]["content"].strip()
-            
-            # Clean up markdown code blocks if the model wrapped the JSON
+
             if content.startswith("```json"):
                 content = content[7:]
             if content.endswith("```"):
                 content = content[:-3]
-            
-            parsed = json.loads(content)
-            
-            return SemanticUnderstanding(
-                intent=parsed.get("intent", Intent.unknown),
-                sub_intent=parsed.get("sub_intent"),
-                product_family=parsed.get("product_family", ProductFamily.unknown),
-                issue_category=parsed.get("issue_category"),
-                risk_level=parsed.get("risk_level", RiskLevel.low),
-                age_context=parsed.get("age_context"),
-                needs_clarification=parsed.get("needs_clarification", False),
-                confidence=parsed.get("confidence", 0.0)
-            )
+
+            try:
+                parsed = json.loads(content)
+            except json.JSONDecodeError as je:
+                print(f"MINIMAX_INVALID_JSON: {je}")
+                return create_fallback("MINIMAX_INVALID_JSON")
+
+            try:
+                # Optional strictly typed validation would go here if we relied entirely on Pydantic
+                return SemanticUnderstanding(
+                    intent=parsed.get("intent", Intent.unknown),
+                    sub_intent=parsed.get("sub_intent"),
+                    product_family=parsed.get("product_family", ProductFamily.unknown),
+                    issue_category=parsed.get("issue_category"),
+                    risk_level=parsed.get("risk_level", RiskLevel.low),
+                    age_context=parsed.get("age_context"),
+                    needs_clarification=parsed.get("needs_clarification", False),
+                    confidence=parsed.get("confidence", 0.0)
+                )
+            except Exception as ve:
+                print(f"MINIMAX_VALIDATION_FAILURE: {ve}")
+                return create_fallback("MINIMAX_VALIDATION_FAILURE")
+
+        elif response.status_code == 401:
+            print(f"MINIMAX_AUTH_FAILURE: 401 Unauthorized")
+            return create_fallback("MINIMAX_AUTH_FAILURE")
         else:
-            print(f"MiniMax Semantic API Error: {response.status_code} - {response.text}")
-            return default_fallback
+            print(f"MINIMAX_SEMANTIC_FAILURE: {response.status_code}")
+            return create_fallback(f"MINIMAX_SEMANTIC_FAILURE_{response.status_code}")
+
+    except requests.exceptions.Timeout:
+        print("MINIMAX_SEMANTIC_TIMEOUT: Request timed out")
+        return create_fallback("MINIMAX_SEMANTIC_TIMEOUT")
+    except requests.exceptions.RequestException as re:
+        print(f"MINIMAX_NETWORK_ERROR: {re}")
+        return create_fallback("MINIMAX_NETWORK_ERROR")
     except Exception as e:
-        print(f"MiniMax Semantic parsing exception: {e}")
-        return default_fallback
+        print(f"MINIMAX_SEMANTIC_EXCEPTION: {e}")
+        return create_fallback("MINIMAX_SEMANTIC_EXCEPTION")
 
 def build_semantic_metadata(semantic_result: SemanticUnderstanding, classifier_mode: str) -> Dict[str, Any]:
     """

@@ -286,6 +286,16 @@ def test_support_brain_scenarios():
 
         # Case 1 (MiniMax Mode): Verify happy path with configured MiniMax
         import unittest.mock as mock
+        from app.services.semantic_understanding import SemanticUnderstanding, Intent, ProductFamily, RiskLevel
+
+        mock_semantic = mock.Mock()
+        mock_semantic.return_value = SemanticUnderstanding(
+            intent=Intent.general_support,
+            product_family=ProductFamily.hoverboard,
+            risk_level=RiskLevel.low,
+            confidence=0.9
+        )
+
         mock_response = mock.Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -296,19 +306,21 @@ def test_support_brain_scenarios():
                 }
             }]
         }
-        with mock.patch("requests.post", return_value=mock_response):
-            settings.MINIMAX_API_KEY = "test_key"
-            session_id_1_minimax = f"test-brain-1-minimax-{uuid.uuid4()}"
-            created_sessions.append(session_id_1_minimax)
-            res1_minimax = client.post("/api/chat", json={
-                "store_id": "hoverboard_store",
-                "message": "Which hoverboard is best for a 9 year old?",
-                "conversation_id": session_id_1_minimax
-            })
-            assert res1_minimax.status_code == 200
-            data1_minimax = res1_minimax.json()
-            print(f"Case 1 (MiniMax Active) Bot Reply: {data1_minimax['reply']}")
-            assert "aeroglide" in data1_minimax["reply"].lower()
+
+        with mock.patch("app.main.analyze_semantics", mock_semantic):
+            with mock.patch("requests.post", return_value=mock_response):
+                settings.MINIMAX_API_KEY = "test_key"
+                session_id_1_minimax = f"test-brain-1-minimax-{uuid.uuid4()}"
+                created_sessions.append(session_id_1_minimax)
+                res1_minimax = client.post("/api/chat", json={
+                    "store_id": "hoverboard_store",
+                    "message": "Which hoverboard is best for a 9 year old?",
+                    "conversation_id": session_id_1_minimax
+                })
+                assert res1_minimax.status_code == 200
+                data1_minimax = res1_minimax.json()
+                print(f"Case 1 (MiniMax Active) Bot Reply: {data1_minimax['reply']}")
+                assert "aeroglide" in data1_minimax["reply"].lower()
 
         # Clear settings key back for subsequent fallback checks
         settings.MINIMAX_API_KEY = ""
@@ -1305,7 +1317,59 @@ def test_semantic_failure_fallback_path():
 
         # The fallback should set brain_mode to "fallback" or "rules", and semantic_classifier_mode to "FALLBACK"
         sem_meta = log.get("semantic_metadata", {})
-        assert sem_meta.get("semantic_classifier_mode") == "FALLBACK"
+        assert sem_meta.get("semantic_classifier_mode") in ["FALLBACK", "MINIMAX_AUTH_FAILURE"]
 
         # Cleanup
         supabase.table("chat_logs").delete().eq("session_id", sid).execute()
+
+def test_semantic_timeout_fallback_path():
+    from unittest.mock import patch
+    import uuid
+    import requests
+
+    sid = f"test-timeout-{uuid.uuid4()}"
+
+    def mock_requests_post(*args, **kwargs):
+        raise requests.exceptions.Timeout("Read timed out")
+
+    from app.config import settings
+    original_key = settings.MINIMAX_API_KEY
+    settings.MINIMAX_API_KEY = "test_key"
+
+    try:
+        with patch("requests.post", side_effect=mock_requests_post):
+            res = client.post("/api/chat", json={
+                "store_id": "hoverboard_store",
+                "message": "my x2 scooter stop work charger green but no turn",
+                "conversation_id": sid
+            })
+
+        assert res.status_code == 200, f"Expected 200 OK, got {res.status_code}"
+
+        data = res.json()
+        reply_text = data["reply"]
+
+        # Ensure it's not the critical safety reply
+        assert "Please stop using the hoverboard immediately" not in reply_text
+        assert "smoke" not in reply_text.lower()
+        assert "burning" not in reply_text.lower()
+
+        # Check DB state
+        from app.config import settings
+        from supabase import create_client
+        supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+
+        logs_res = supabase.table("chat_logs").select("*").eq("session_id", sid).execute()
+        assert len(logs_res.data) > 0, "Chat log not persisted"
+        log = logs_res.data[0]
+
+        assert log.get("escalated") is False, "Should not escalate on semantic timeout"
+
+        sem_meta = log.get("semantic_metadata", {})
+        assert sem_meta.get("semantic_classifier_mode") == "MINIMAX_SEMANTIC_TIMEOUT", f"Got mode: {sem_meta.get('semantic_classifier_mode')}"
+        assert sem_meta.get("semantic_risk_level") == "unknown"
+
+        # Cleanup
+        supabase.table("chat_logs").delete().eq("session_id", sid).execute()
+    finally:
+        settings.MINIMAX_API_KEY = original_key

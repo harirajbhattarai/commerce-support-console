@@ -138,7 +138,7 @@ def construct_system_prompt(store_id: str, retrieved_knowledge: str) -> str:
         "aroma_haven": "Aroma Haven Botanicals"
     }
     store_name = store_names.get(store_id, "our store")
-    
+
     general_policies = """
 - Product Stopped Working / Not Turning On: If your hoverboard has stopped working, first make sure it is fully charged and check the charger light. Do not use or charge it if there is any burning smell, smoke, overheating, swelling, water damage, or visible damage. If it still does not work, contact contact@hoverboardstore.co.uk with your order number, a short description of the issue, and photos/videos if safe. Our team can then advise the next step under the 12-month warranty where applicable.
 - Reset & Calibration: If the hoverboard is beeping or has red flashing lights, it may need to be reset. Turn it off, place it on a flat level surface, hold the power button down for 10 seconds until the lights flash, turn it off again, and then turn it back on.
@@ -146,7 +146,7 @@ def construct_system_prompt(store_id: str, retrieved_knowledge: str) -> str:
 - Returns: Customers can return unused items in their original packaging within 30 days. Contact contact@hoverboardstore.co.uk to initiate.
 - Contact: For any other support issues, customers should email contact@hoverboardstore.co.uk.
 """
-    
+
     return f"""You are the friendly customer support assistant for {store_name}.
 Your job is to answer customer questions accurately and safely using the provided Knowledge Base context and general policies below.
 
@@ -190,7 +190,7 @@ def generate_support_reply(
     else:
         intent, risk_level, should_escalate, escalation_reason = detect_intent_and_risk(user_message)
     msg = user_message.lower().strip()
-    
+
     # 2. If safety router triggers forced escalation, return holding reply immediately
     if should_escalate:
         if intent == "speak_to_human":
@@ -201,7 +201,7 @@ def generate_support_reply(
             reply_text = "To help you with this order request, please provide your order reference number, full name, and billing postcode. Once verified, our support team will update you shortly."
         else:
             reply_text = "Our support team has been notified and a representative will reply here shortly."
-            
+
         return {
             "reply_text": reply_text,
             "intent": intent,
@@ -212,13 +212,16 @@ def generate_support_reply(
             "brain_mode": "rules",
             "route_decision": "escalated"
         }
-        
-    # 3. Check if MiniMax is configured
+
+    # 3. Check if MiniMax is configured and available
     api_key = settings.MINIMAX_API_KEY
     model_name = settings.MINIMAX_MODEL
-    
-    if not api_key:
-        # Fallback to rules if API key missing
+
+    # If API key is missing OR semantic understanding failed (timeout, network, etc.), fallback to rules
+    has_semantic_error = hasattr(semantic_understanding, "error_reason") and semantic_understanding.error_reason is not None
+
+    if not api_key or has_semantic_error:
+        # Fallback to rules if API key missing or semantic parsing failed
         if "stops working" in msg or "not working" in msg or "stopped working" in msg:
             reply_text = "Sorry to hear that. If your hoverboard has stopped working, first make sure it is fully charged and check the charger light. Do not use or charge it if there is any burning smell, smoke, overheating, swelling, water damage, or visible damage. If it still does not work, contact contact@hoverboardstore.co.uk with your order number, a short description of the issue, and photos/videos if safe. Our team can then advise the next step under the 12-month warranty where applicable."
         elif "reset" in msg or "calibrate" in msg or "calibration" in msg:
@@ -231,7 +234,7 @@ def generate_support_reply(
             reply_text = "Our hoverboards come with a 12-month warranty covering manufacturing faults and technical issues. Physical damage is not covered."
         else:
             reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
-            
+
         return {
             "reply_text": reply_text,
             "intent": intent,
@@ -242,7 +245,7 @@ def generate_support_reply(
             "brain_mode": "fallback",
             "route_decision": "answered_by_rules"
         }
-        
+
     # 4. MiniMax LLM Query execution
     try:
         url = "https://api.minimax.io/v1/chat/completions"
@@ -250,30 +253,35 @@ def generate_support_reply(
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
         }
-        
+
         system_prompt = construct_system_prompt(store_id, retrieved_knowledge or "No knowledge articles found.")
         messages = [{"role": "system", "content": system_prompt}]
-        
+
         # Include history context if present
         if previous_context:
             for ctx in previous_context:
                 role = "assistant" if ctx.get("sender") in ["bot", "agent"] else "user"
                 messages.append({"role": role, "content": ctx.get("content", "")})
-                
+
         messages.append({"role": "user", "content": user_message})
-        
+
         payload = {
             "model": model_name,
             "messages": messages,
             "stream": False
         }
-        
-        response = requests.post(url, headers=headers, json=payload, timeout=8.0)
-        
+
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=(settings.MINIMAX_CONNECT_TIMEOUT, settings.MINIMAX_READ_TIMEOUT)
+        )
+
         if response.status_code == 200:
             result = response.json()
             reply_text = result["choices"][0]["message"]["content"].strip()
-            
+
             # Perform a basic validation that LLM did not bypass safety instructions
             safety_lower = reply_text.lower()
             if any(kw in safety_lower for kw in ["smoke", "fire", "spark", "burning"]):
@@ -287,7 +295,7 @@ def generate_support_reply(
                     "escalation_reason": "LLM output safety audit failed",
                     "brain_mode": "minimax"
                 }
-                
+
             return {
                 "reply_text": reply_text,
                 "intent": intent,
@@ -301,7 +309,7 @@ def generate_support_reply(
         else:
             print(f"MiniMax API returned error {response.status_code}: {response.text}")
             raise Exception("Non-200 API response")
-            
+
     except Exception as e:
         print(f"Error invoking MiniMax API support brain: {e}")
         # Graceful fallback to rules-based logic on LLM failure
@@ -317,7 +325,7 @@ def generate_support_reply(
             reply_text = "Our hoverboards come with a 12-month warranty covering manufacturing faults and technical issues. Physical damage is not covered."
         else:
             reply_text = retrieved_knowledge if retrieved_knowledge else rules_fallback_reply
-            
+
         return {
             "reply_text": reply_text,
             "intent": intent,

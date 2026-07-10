@@ -30,6 +30,8 @@ class Settings:
     # MiniMax Configuration
     MINIMAX_API_KEY: str = os.getenv("MINIMAX_API_KEY", "")
     MINIMAX_MODEL: str = os.getenv("MINIMAX_MODEL", "MiniMax-M2.7")
+    MINIMAX_CONNECT_TIMEOUT: float = float(os.getenv("MINIMAX_CONNECT_TIMEOUT_SECONDS", "3.0"))
+    MINIMAX_READ_TIMEOUT: float = float(os.getenv("MINIMAX_READ_TIMEOUT_SECONDS", "15.0"))
     ENVIRONMENT: str = os.getenv("APP_ENV", "PRODUCTION")
 
 
