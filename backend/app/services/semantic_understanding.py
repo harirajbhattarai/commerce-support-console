@@ -93,7 +93,7 @@ Output strictly valid JSON and nothing else."""
             
     messages.append({"role": "user", "content": user_message})
 
-    url = "https://api.minimax.chat/v1/chat/completions"
+    url = "https://api.minimax.io/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"

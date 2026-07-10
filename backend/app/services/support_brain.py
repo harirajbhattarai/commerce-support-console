@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from app.config import settings
 
 def detect_intent_and_risk(message_text: str):
@@ -174,7 +174,7 @@ def generate_support_reply(
     rules_fallback_reply: str = "",
     matched_title: Optional[str] = None,
     semantic_understanding: Optional[Any] = None
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """
     Orchestrates intent detection, safety routing, and response generation (MiniMax or Fallback).
     """
@@ -245,7 +245,7 @@ def generate_support_reply(
         
     # 4. MiniMax LLM Query execution
     try:
-        url = "https://api.minimax.chat/v1/chat/completions"
+        url = "https://api.minimax.io/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
