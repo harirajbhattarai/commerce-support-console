@@ -307,7 +307,7 @@ def test_support_brain_scenarios():
             }]
         }
 
-        with mock.patch("app.main.analyze_semantics", mock_semantic):
+        with mock.patch("app.services.semantic_understanding.analyze_semantics", mock_semantic):
             with mock.patch("requests.post", return_value=mock_response):
                 settings.MINIMAX_API_KEY = "test_key"
                 session_id_1_minimax = f"test-brain-1-minimax-{uuid.uuid4()}"

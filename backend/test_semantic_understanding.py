@@ -191,7 +191,7 @@ def test_failure_confidence_bounds():
 
 def test_semantic_metadata_mapping():
     from app.services.semantic_understanding import build_semantic_metadata, SemanticUnderstanding, Intent, ProductFamily, RiskLevel
-    
+
     mock_sem = SemanticUnderstanding(
         intent=Intent.power_issue,
         sub_intent="power_issue",
@@ -206,9 +206,9 @@ def test_semantic_metadata_mapping():
         clarification_reason="",
         confidence=0.98
     )
-    
+
     meta = build_semantic_metadata(mock_sem, "MINIMAX_STRUCTURED")
-    
+
     assert meta["semantic_intent"] == "power_issue"
     assert meta["semantic_sub_intent"] == "power_issue"
     assert meta["semantic_product_entity"] == "x2 scooter"
@@ -222,3 +222,124 @@ def test_semantic_metadata_mapping():
     assert meta["semantic_clarification_reason"] == ""
     assert meta["semantic_confidence"] == 0.98
     assert meta["semantic_classifier_mode"] == "MINIMAX_STRUCTURED"
+
+# ==========================================
+# RESPONSE PARSER TESTS (8)
+# ==========================================
+from app.services.semantic_understanding import extract_minimax_semantic_payload
+
+def _build_response(status, data):
+    r = MagicMock()
+    r.status_code = status
+    r.json.return_value = data
+    return r
+
+def _create_fallback(reason):
+    return SemanticUnderstanding(
+        intent=Intent.unknown,
+        product_family=ProductFamily.unknown,
+        risk_level=RiskLevel.unknown,
+        confidence=0.0,
+        error_reason=reason
+    )
+
+def test_parser_a_valid_envelope():
+    # Test A: Valid OpenAI-compatible envelope
+    data = {
+        "choices": [{
+            "message": {
+                "content": '{"intent":"power_issue", "product_family":"hoverboard"}'
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.intent == Intent.power_issue
+
+def test_parser_b_code_fence():
+    # Test B: Valid semantic JSON inside ```json code fence
+    data = {
+        "choices": [{
+            "message": {
+                "content": "```json\n{\"intent\":\"power_issue\"}\n```"
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.intent == Intent.power_issue
+
+def test_parser_c_empty_choices():
+    # Test C: Empty choices
+    data = {"choices": []}
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.error_reason == "MINIMAX_EMPTY_CONTENT"
+
+def test_parser_d_content_null():
+    # Test D: message.content = null
+    data = {
+        "choices": [{
+            "message": {
+                "content": None
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.error_reason == "MINIMAX_EMPTY_CONTENT"
+
+def test_parser_e_content_empty():
+    # Test E: message.content = ""
+    data = {
+        "choices": [{
+            "message": {
+                "content": ""
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.error_reason == "MINIMAX_EMPTY_CONTENT"
+
+def test_parser_f_non_json():
+    # Test F: non-JSON final content
+    data = {
+        "choices": [{
+            "message": {
+                "content": "Here is the result: not a json object"
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.error_reason == "MINIMAX_INVALID_JSON"
+
+def test_parser_g_schema_failure():
+    # Test G: JSON object fails Pydantic semantic schema (e.g. invalid type)
+    # The current pydantic model might ignore invalid keys or fallback, but if we give invalid confidence string it raises validation error
+    data = {
+        "choices": [{
+            "message": {
+                "content": '{"intent":"power_issue", "confidence": "not-a-number"}'
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.error_reason == "MINIMAX_SCHEMA_VALIDATION_FAILURE"
+
+def test_parser_h_reasoning_split():
+    # Test H: MiniMax thinking is separated using reasoning_split
+    # Final message.content contains valid semantic JSON, and reasoning_details exists but is ignored
+    data = {
+        "choices": [{
+            "message": {
+                "content": '{"intent":"power_issue"}',
+                "reasoning_details": "I am thinking about the user issue..."
+            }
+        }]
+    }
+    r = _build_response(200, data)
+    res = extract_minimax_semantic_payload(r, _create_fallback)
+    assert res.intent == Intent.power_issue

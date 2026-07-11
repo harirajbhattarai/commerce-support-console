@@ -54,6 +54,78 @@ class SemanticUnderstanding(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0 of the classification")
     error_reason: Optional[str] = Field(default=None, description="Internal field for tracking API failure reason")
 
+def extract_minimax_semantic_payload(response: requests.Response, create_fallback) -> SemanticUnderstanding:
+    # 1. validate successful HTTP response
+    if response.status_code == 401:
+        print("MINIMAX_AUTH_FAILURE: 401 Unauthorized")
+        return create_fallback("MINIMAX_AUTH_FAILURE")
+    elif response.status_code != 200:
+        print(f"MINIMAX_HTTP_FAILURE: {response.status_code}")
+        return create_fallback(f"MINIMAX_HTTP_FAILURE_{response.status_code}")
+
+    # 2. parse the OpenAI-compatible JSON envelope
+    try:
+        data = response.json()
+    except ValueError as ve:
+        print(f"MINIMAX_RESPONSE_ENVELOPE_ERROR: {ve}")
+        return create_fallback("MINIMAX_RESPONSE_ENVELOPE_ERROR")
+
+    # 3. validate choices exists and is non-empty
+    choices = data.get("choices")
+    if not choices or not isinstance(choices, list) or len(choices) == 0:
+        print("MINIMAX_EMPTY_CONTENT: No choices returned")
+        return create_fallback("MINIMAX_EMPTY_CONTENT")
+
+    # 4. validate choices[0].message exists
+    message = choices[0].get("message")
+    if not message or not isinstance(message, dict):
+        print("MINIMAX_EMPTY_CONTENT: No message in choices[0]")
+        return create_fallback("MINIMAX_EMPTY_CONTENT")
+
+    # 5. extract message.content
+    content = message.get("content")
+
+    # 6. reject None/empty content with a controlled classifier failure
+    if content is None or not str(content).strip():
+        print("MINIMAX_EMPTY_CONTENT: Content is empty or None")
+        return create_fallback("MINIMAX_EMPTY_CONTENT")
+
+    content = str(content).strip()
+
+    # 7. handle approved non-semantic wrapper formatting
+    if content.startswith("```json"):
+        content = content[7:]
+    if content.endswith("```"):
+        content = content[:-3]
+    content = content.strip()
+
+    # 8. parse the final semantic JSON object
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError as je:
+        print(f"MINIMAX_INVALID_JSON: {je}")
+        return create_fallback("MINIMAX_INVALID_JSON")
+
+    if not isinstance(parsed, dict):
+        print("MINIMAX_INVALID_JSON: Parsed JSON is not an object")
+        return create_fallback("MINIMAX_INVALID_JSON")
+
+    # 9. pass parsed dict to Pydantic SemanticUnderstanding validation
+    try:
+        return SemanticUnderstanding(
+            intent=parsed.get("intent", Intent.unknown),
+            sub_intent=parsed.get("sub_intent"),
+            product_family=parsed.get("product_family", ProductFamily.unknown),
+            issue_category=parsed.get("issue_category"),
+            risk_level=parsed.get("risk_level", RiskLevel.low),
+            age_context=parsed.get("age_context"),
+            needs_clarification=parsed.get("needs_clarification", False),
+            confidence=parsed.get("confidence", 0.0)
+        )
+    except Exception as ve:
+        print(f"MINIMAX_SCHEMA_VALIDATION_FAILURE: {ve}")
+        return create_fallback("MINIMAX_SCHEMA_VALIDATION_FAILURE")
+
 def analyze_semantics(user_message: str, previous_context: Optional[List[Dict[str, str]]] = None) -> SemanticUnderstanding:
     api_key = settings.MINIMAX_API_KEY
     model_name = settings.MINIMAX_MODEL
@@ -107,7 +179,8 @@ Output strictly valid JSON and nothing else."""
         "messages": messages,
         "stream": False,
         "temperature": 0.1,
-        "response_format": {"type": "json_object"}
+        "response_format": {"type": "json_object"},
+        "reasoning_split": True
     }
 
     try:
@@ -117,43 +190,7 @@ Output strictly valid JSON and nothing else."""
             json=payload,
             timeout=(settings.MINIMAX_CONNECT_TIMEOUT, settings.MINIMAX_READ_TIMEOUT)
         )
-        if response.status_code == 200:
-            result = response.json()
-            content = result["choices"][0]["message"]["content"].strip()
-
-            if content.startswith("```json"):
-                content = content[7:]
-            if content.endswith("```"):
-                content = content[:-3]
-
-            try:
-                parsed = json.loads(content)
-            except json.JSONDecodeError as je:
-                print(f"MINIMAX_INVALID_JSON: {je}")
-                return create_fallback("MINIMAX_INVALID_JSON")
-
-            try:
-                # Optional strictly typed validation would go here if we relied entirely on Pydantic
-                return SemanticUnderstanding(
-                    intent=parsed.get("intent", Intent.unknown),
-                    sub_intent=parsed.get("sub_intent"),
-                    product_family=parsed.get("product_family", ProductFamily.unknown),
-                    issue_category=parsed.get("issue_category"),
-                    risk_level=parsed.get("risk_level", RiskLevel.low),
-                    age_context=parsed.get("age_context"),
-                    needs_clarification=parsed.get("needs_clarification", False),
-                    confidence=parsed.get("confidence", 0.0)
-                )
-            except Exception as ve:
-                print(f"MINIMAX_VALIDATION_FAILURE: {ve}")
-                return create_fallback("MINIMAX_VALIDATION_FAILURE")
-
-        elif response.status_code == 401:
-            print(f"MINIMAX_AUTH_FAILURE: 401 Unauthorized")
-            return create_fallback("MINIMAX_AUTH_FAILURE")
-        else:
-            print(f"MINIMAX_SEMANTIC_FAILURE: {response.status_code}")
-            return create_fallback(f"MINIMAX_SEMANTIC_FAILURE_{response.status_code}")
+        return extract_minimax_semantic_payload(response, create_fallback)
 
     except requests.exceptions.Timeout:
         print("MINIMAX_SEMANTIC_TIMEOUT: Request timed out")
