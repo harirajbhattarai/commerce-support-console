@@ -157,6 +157,7 @@ Your job is to answer customer questions accurately and safely using the provide
 4. DO NOT make any legal assertions or medical claims.
 5. If the customer reports any safety hazards, battery swelling, overheating, sparks, smoke, fire, or burning smells, instruct them to stop using and unplug the device immediately, place it in a safe outdoor location, and escalate to a human agent. Do not attempt any other troubleshooting.
 6. Keep your answers brief, friendly, helpful, and under 3-4 sentences where possible.
+7. DO NOT invent model-specific operating instructions (e.g., how to start, power button location, reset steps) for products not in the Knowledge Base context. If asked about an unsupported model like "X2", ask the customer to confirm their exact model, request their product manual, offer human support, and only provide verified general safety information.
 
 === GENERAL POLICIES ===
 {general_policies}
@@ -164,6 +165,45 @@ Your job is to answer customer questions accurately and safely using the provide
 === KNOWLEDGE BASE CONTEXT ===
 {retrieved_knowledge}
 """
+
+import re
+
+def extract_customer_answer_payload(response_data: dict) -> str:
+    """
+    Parses the OpenAI-compatible response envelope.
+    Safely extracts choices[0].message.content.
+    Removes <think>...</think> blocks.
+    Strips raw Markdown markers.
+    Returns cleaned text. Raises ValueError if empty or malformed.
+    """
+    if not isinstance(response_data, dict):
+        raise ValueError("Invalid response envelope")
+
+    choices = response_data.get("choices", [])
+    if not choices or not isinstance(choices, list):
+        raise ValueError("No choices in response")
+
+    message = choices[0].get("message", {})
+    if not isinstance(message, dict):
+        raise ValueError("Invalid message format")
+
+    content = message.get("content", "")
+    if not content or not isinstance(content, str):
+        raise ValueError("Empty or missing content")
+
+    # Remove <think>...</think> block
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+
+    # Remove simple markdown: **, *, ###, etc.
+    content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)  # Bold
+    content = re.sub(r'\*(.*?)\*', r'\1', content)      # Italic
+    content = re.sub(r'#{1,6}\s*(.*)', r'\1', content)  # Headers
+
+    content = content.strip()
+    if not content:
+        raise ValueError("Content empty after removing reasoning")
+
+    return content
 
 def generate_support_reply(
     store_id: str,
@@ -268,7 +308,8 @@ def generate_support_reply(
         payload = {
             "model": model_name,
             "messages": messages,
-            "stream": False
+            "stream": False,
+            "reasoning_split": True
         }
 
         response = requests.post(
@@ -280,21 +321,11 @@ def generate_support_reply(
 
         if response.status_code == 200:
             result = response.json()
-            reply_text = result["choices"][0]["message"]["content"].strip()
-
-            # Perform a basic validation that LLM did not bypass safety instructions
-            safety_lower = reply_text.lower()
-            if any(kw in safety_lower for kw in ["smoke", "fire", "spark", "burning"]):
-                # Forced transfer if safety words are inside the bot output
-                return {
-                    "reply_text": "Please stop using the hoverboard immediately. Do not charge it again. If it is safe, unplug it and keep it away from flammable materials. Do not attempt to repair the battery or charger yourself. Our support team has been notified and will reply here shortly. You can also contact contact@hoverboardstore.co.uk.",
-                    "intent": intent,
-                    "confidence": 0.0,
-                    "source_used": "LLM Output Safety Audit Safeguard",
-                    "should_escalate": True,
-                    "escalation_reason": "LLM output safety audit failed",
-                    "brain_mode": "minimax"
-                }
+            try:
+                reply_text = extract_customer_answer_payload(result)
+            except ValueError as ve:
+                print(f"Extraction failed: {ve}")
+                raise Exception("Failed to extract valid content from MiniMax response")
 
             return {
                 "reply_text": reply_text,

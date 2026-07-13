@@ -452,6 +452,7 @@ async def chat_endpoint(request: ChatRequest):
     confidence = 0.0
     escalation_reason = ""
     source_used = matched_title
+    gate_result = None
 
     if is_escalated:
         reply = "Our support team has been notified and a representative will reply here shortly."
@@ -655,6 +656,23 @@ async def chat_endpoint(request: ChatRequest):
             supabase_client.table("chat_logs").insert(log_entry).execute()
         except Exception as db_err:
             print(f"ERROR: Failed to save conversation log to Supabase: {db_err}")
+
+    try:
+        trace_data = {
+            "session_id": conversation_id,
+            "hard_safety_matched": bool(gate_result and "matched_safety_concepts" in gate_result),
+            "hard_safety_concepts": gate_result.get("matched_safety_concepts", []) if gate_result and "matched_safety_concepts" in gate_result else [],
+            "semantic_intent": getattr(semantic_understanding.intent, "value", str(semantic_understanding.intent)) if 'semantic_understanding' in locals() and semantic_understanding and hasattr(semantic_understanding, "intent") else "unknown",
+            "semantic_risk": getattr(semantic_understanding.risk_level, "value", str(semantic_understanding.risk_level)) if 'semantic_understanding' in locals() and semantic_understanding and hasattr(semantic_understanding, "risk_level") else "unknown",
+            "semantic_classifier_mode": semantic_metadata.get("semantic_classifier_mode", "UNKNOWN") if 'semantic_metadata' in locals() and isinstance(semantic_metadata, dict) else "UNKNOWN",
+            "retrieved_article_title": matched_title,
+            "knowledge_risk": get_knowledge_risk_classification(matched_item) if 'matched_item' in locals() and matched_item else "unknown",
+            "reply_mode": brain_mode,
+            "final_reply_source": source_used
+        }
+        print(f"SUPPORT_PIPELINE_TRACE: {json.dumps(trace_data)}")
+    except Exception as trace_err:
+        print(f"ERROR: Failed to write SUPPORT_PIPELINE_TRACE: {trace_err}")
 
     return ChatResponse(
         reply=reply,

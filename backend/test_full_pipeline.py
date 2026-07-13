@@ -66,6 +66,39 @@ def test_full_pipeline_negative_controls():
         finally:
             delete_session(session_id)
 
+def test_full_pipeline_minimax_extraction():
+    # A. Hello
+    session_id_a = f"test-minimax-a-{uuid.uuid4()}"
+    try:
+        res_a = run_chat("hello", session_id_a)
+        reply = res_a["reply"]
+        assert "<think>" not in reply
+        assert "</think>" not in reply
+    finally:
+        delete_session(session_id_a)
+
+    # B. Unsupported scooter x2
+    session_id_b = f"test-minimax-b-{uuid.uuid4()}"
+    try:
+        res_b = run_chat("how start my scooter x2", session_id_b)
+        reply = res_b["reply"]
+        assert "<think>" not in reply
+        assert "**" not in reply
+        # It should ask to confirm exact model, request manual, offer human support, or ask to contact
+        assert any(phrase in reply.lower() for phrase in ["contact", "model", "manual", "support", "unsupported"])
+    finally:
+        delete_session(session_id_b)
+
+    # C. Benign charger query
+    session_id_c = f"test-minimax-c-{uuid.uuid4()}"
+    try:
+        res_c = run_chat("my x2 scooter stop work charger green but no turn", session_id_c)
+        assert res_c["escalated"] == False
+        assert res_c["effective_status"] != "needs_escalation"
+        assert "stop using the hoverboard immediately" not in res_c["reply"].lower()
+    finally:
+        delete_session(session_id_c)
+
 def test_full_pipeline_positive_controls():
     queries = [
         "my hoverboard is burn",

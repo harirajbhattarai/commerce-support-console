@@ -343,3 +343,24 @@ def test_parser_h_reasoning_split():
     r = _build_response(200, data)
     res = extract_minimax_semantic_payload(r, _create_fallback)
     assert res.intent == Intent.power_issue
+
+def test_extract_customer_answer_payload():
+    from app.services.support_brain import extract_customer_answer_payload
+
+    # Clean text
+    data1 = {"choices": [{"message": {"content": "Hello there"}}]}
+    assert extract_customer_answer_payload(data1) == "Hello there"
+
+    # Text with <think> tag
+    data2 = {"choices": [{"message": {"content": "<think>Thinking deeply...</think>Hello there"}}]}
+    assert extract_customer_answer_payload(data2) == "Hello there"
+
+    # Text with Markdown formatting
+    data3 = {"choices": [{"message": {"content": "**Bold** and *italic* and ### Header"}}]}
+    assert extract_customer_answer_payload(data3) == "Bold and italic and Header"
+
+    # Empty content
+    import pytest
+    data4 = {"choices": [{"message": {"content": "<think>Just thinking</think>"}}]}
+    with pytest.raises(ValueError):
+        extract_customer_answer_payload(data4)
